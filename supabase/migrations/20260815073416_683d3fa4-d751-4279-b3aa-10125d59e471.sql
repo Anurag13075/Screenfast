@@ -1,0 +1,1 @@
+CREATE POLICY "designs_read_own" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'designs' AND (storage.foldername(name))[1] = auth.uid()::text);
