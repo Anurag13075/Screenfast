@@ -15,6 +15,9 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
+import { Route as DashboardLibraryRouteImport } from './routes/dashboard.library'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardSupportRouteImport } from './routes/dashboard.support'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +49,21 @@ const DashboardBillingRoute = DashboardBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardLibraryRoute = DashboardLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSupportRoute = DashboardSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +71,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/pricing': typeof PricingRoute
   '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/library': typeof DashboardLibraryRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +81,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/pricing': typeof PricingRoute
   '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/library': typeof DashboardLibraryRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -69,6 +93,9 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/pricing': typeof PricingRoute
   '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/library': typeof DashboardLibraryRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/support': typeof DashboardSupportRoute
   '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -79,9 +106,20 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/pricing'
     | '/dashboard/billing'
+    | '/dashboard/library'
+    | '/dashboard/settings'
+    | '/dashboard/support'
     | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/pricing' | '/dashboard/billing' | '/dashboard'
+  to:
+    | '/'
+    | '/auth'
+    | '/pricing'
+    | '/dashboard/billing'
+    | '/dashboard/library'
+    | '/dashboard/settings'
+    | '/dashboard/support'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -89,6 +127,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/pricing'
     | '/dashboard/billing'
+    | '/dashboard/library'
+    | '/dashboard/settings'
+    | '/dashboard/support'
     | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -143,16 +184,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/library': {
+      id: '/dashboard/library'
+      path: '/library'
+      fullPath: '/dashboard/library'
+      preLoaderRoute: typeof DashboardLibraryRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/support': {
+      id: '/dashboard/support'
+      path: '/support'
+      fullPath: '/dashboard/support'
+      preLoaderRoute: typeof DashboardSupportRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
   DashboardBillingRoute: typeof DashboardBillingRoute
+  DashboardLibraryRoute: typeof DashboardLibraryRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardSupportRoute: typeof DashboardSupportRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBillingRoute: DashboardBillingRoute,
+  DashboardLibraryRoute: DashboardLibraryRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardSupportRoute: DashboardSupportRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
