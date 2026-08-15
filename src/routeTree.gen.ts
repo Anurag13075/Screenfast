@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardLibraryRouteImport } from './routes/dashboard.library'
@@ -37,6 +39,16 @@ const DashboardRoute = DashboardRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -70,6 +82,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/pricing': typeof PricingRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/library': typeof DashboardLibraryRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -80,6 +94,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/pricing': typeof PricingRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/library': typeof DashboardLibraryRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -92,6 +108,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/pricing': typeof PricingRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/library': typeof DashboardLibraryRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -105,6 +123,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/pricing'
+    | '/refund'
+    | '/terms'
     | '/dashboard/billing'
     | '/dashboard/library'
     | '/dashboard/settings'
@@ -115,6 +135,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/pricing'
+    | '/refund'
+    | '/terms'
     | '/dashboard/billing'
     | '/dashboard/library'
     | '/dashboard/settings'
@@ -126,6 +148,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/pricing'
+    | '/refund'
+    | '/terms'
     | '/dashboard/billing'
     | '/dashboard/library'
     | '/dashboard/settings'
@@ -138,6 +162,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   PricingRoute: typeof PricingRoute
+  RefundRoute: typeof RefundRoute
+  TermsRoute: typeof TermsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -168,6 +194,20 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -233,6 +273,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
   PricingRoute: PricingRoute,
+  RefundRoute: RefundRoute,
+  TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
