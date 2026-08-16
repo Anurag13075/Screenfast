@@ -136,7 +136,10 @@ function CanvasWorkspace() {
   const unlock = useMutation({
     mutationFn: (id: string) => unlockFn({ data: { id } }),
     onSuccess: (result) => {
-      if (!result.ok) return toast.error("Not enough credits to unlock the export.");
+      if (!result.ok) {
+        toast.error("Not enough credits to unlock the export.");
+        return;
+      }
       toast.success("Export unlocked");
       queryClient.invalidateQueries({ queryKey: ["generations"] });
       queryClient.invalidateQueries({ queryKey: ["account"] });
@@ -144,8 +147,14 @@ function CanvasWorkspace() {
   });
 
   const readFile = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) return toast.error("Only images can be attached");
-    if (file.size > 5_000_000) return toast.error("Image must be under 5 MB");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only images can be attached");
+      return;
+    }
+    if (file.size > 5_000_000) {
+      toast.error("Image must be under 5 MB");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setReference({ name: file.name, dataUrl: String(reader.result) });
     reader.readAsDataURL(file);

@@ -181,7 +181,7 @@ function AuthPage() {
         />
         <motion.div
           key={shake}
-          animate={shake ? { x: [0, -4, 4, -3, 3, 0] } : undefined}
+          animate={shake ? { x: [0, -4, 4, -3, 3, 0] } : { x: 0 }}
           transition={{ duration: 0.2 }}
           className="w-full max-w-sm"
         >
