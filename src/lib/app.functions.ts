@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isUnlimited, UNLIMITED_CREDITS } from "@/lib/entitlements";
 import { GENERATION_COST, UNLOCK_COST } from "@/lib/plans";
 import { buildDesignPrompt } from "@/lib/prompt";
 
@@ -19,6 +20,7 @@ export const getAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const unlimited = isUnlimited(context.claims);
     const [balance, subscription, profile] = await Promise.all([
       supabase.from("credit_balances").select("credits, plan").eq("user_id", userId).maybeSingle(),
       supabase
@@ -30,11 +32,13 @@ export const getAccount = createServerFn({ method: "GET" })
     ]);
 
     return {
-      credits: balance.data?.credits ?? 0,
-      plan: balance.data?.plan ?? "free",
+      unlimited,
+      credits: unlimited ? UNLIMITED_CREDITS : (balance.data?.credits ?? 0),
+      plan: unlimited ? "unlimited" : (balance.data?.plan ?? "free"),
       subscription: subscription.data ?? null,
       displayName: profile.data?.display_name ?? null,
       avatarUrl: profile.data?.avatar_url ?? null,
+      email: typeof context.claims.email === "string" ? context.claims.email : null,
     };
   });
 
@@ -92,6 +96,7 @@ const generateSchema = z.object({
   prompt: z.string().trim().min(6).max(600),
   mode: z.enum(["mobile", "web", "system"]),
   style: z.string().trim().min(2).max(40),
+  reference: z.string().startsWith("data:image/").max(8_000_000).optional(),
 });
 
 export const generateDesign = createServerFn({ method: "POST" })
@@ -99,15 +104,18 @@ export const generateDesign = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => generateSchema.parse(input))
   .handler(async ({ data, context }): Promise<{ ok: true; generation: GenerationRow } | { ok: false; error: string }> => {
     const { userId } = context;
+    const unlimited = isUnlimited(context.claims);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const spend = await supabaseAdmin.rpc("spend_credits", {
-      _user_id: userId,
-      _amount: GENERATION_COST,
-      _reason: "generation",
-    });
-    if (spend.error) {
-      return { ok: false, error: "not_enough_credits" };
+    if (!unlimited) {
+      const spend = await supabaseAdmin.rpc("spend_credits", {
+        _user_id: userId,
+        _amount: GENERATION_COST,
+        _reason: "generation",
+      });
+      if (spend.error) {
+        return { ok: false, error: "not_enough_credits" };
+      }
     }
 
     const apiKey = process.env["LOVABLE_API_KEY"];
@@ -120,7 +128,17 @@ export const generateDesign = createServerFn({ method: "POST" })
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-3-pro-image",
-          messages: [{ role: "user", content: buildDesignPrompt(data.prompt, data.mode, data.style) }],
+          messages: [
+            {
+              role: "user",
+              content: data.reference
+                ? [
+                    { type: "text", text: buildDesignPrompt(data.prompt, data.mode, data.style) },
+                    { type: "image_url", image_url: { url: data.reference } },
+                  ]
+                : buildDesignPrompt(data.prompt, data.mode, data.style),
+            },
+          ],
           modalities: ["image", "text"],
         }),
       });
@@ -135,11 +153,13 @@ export const generateDesign = createServerFn({ method: "POST" })
     }
 
     if (!b64) {
-      await supabaseAdmin.rpc("grant_credits", {
-        _user_id: userId,
-        _amount: GENERATION_COST,
-        _reason: "refund_failed_generation",
-      });
+      if (!unlimited) {
+        await supabaseAdmin.rpc("grant_credits", {
+          _user_id: userId,
+          _amount: GENERATION_COST,
+          _reason: "refund_failed_generation",
+        });
+      }
       return { ok: false, error: "generation_failed" };
     }
 
@@ -161,6 +181,7 @@ export const generateDesign = createServerFn({ method: "POST" })
         mode: data.mode,
         style: data.style,
         image_url: path,
+        ...(unlimited ? { unlocked: true } : {}),
       })
       .select("id, prompt, mode, style, unlocked, created_at, image_url")
       .single();
@@ -178,6 +199,7 @@ export const unlockGeneration = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const unlimited = isUnlimited(context.claims);
     const owned = await context.supabase
       .from("generations")
       .select("id, unlocked")
@@ -186,13 +208,15 @@ export const unlockGeneration = createServerFn({ method: "POST" })
     if (!owned.data) return { ok: false as const, error: "not_found" };
     if (owned.data.unlocked) return { ok: true as const };
 
-    const spend = await supabaseAdmin.rpc("spend_credits", {
-      _user_id: context.userId,
-      _amount: UNLOCK_COST,
-      _reason: "export_unlock",
-      _reference: data.id,
-    });
-    if (spend.error) return { ok: false as const, error: "not_enough_credits" };
+    if (!unlimited) {
+      const spend = await supabaseAdmin.rpc("spend_credits", {
+        _user_id: context.userId,
+        _amount: UNLOCK_COST,
+        _reason: "export_unlock",
+        _reference: data.id,
+      });
+      if (spend.error) return { ok: false as const, error: "not_enough_credits" };
+    }
 
     await supabaseAdmin.from("generations").update({ unlocked: true }).eq("id", data.id);
     return { ok: true as const };
