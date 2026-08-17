@@ -172,7 +172,7 @@
 }
 
 @utility console-shell {
-  background: oklch(0.26 0.012 60 / 92%);
+  background: oklch(0.245 0.012 60 / 97%);
   border: 1px solid oklch(1 0 0 / 12%);
   box-shadow:
     0 1px 0 0 oklch(1 0 0 / 10%) inset,
