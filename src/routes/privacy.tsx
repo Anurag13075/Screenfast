@@ -103,7 +103,7 @@ function PrivacyPage() {
           information.
         </p>
         <p className="text-muted-foreground">For privacy-related requests, contact:</p>
-        <p className="font-mono text-sm font-semibold">>anuragf863@gmail.com</p>
+        <p className="font-mono text-sm font-semibold">anuragf863@gmail.com</p>
 
         <h2 className="pt-4 text-2xl font-extrabold">Children's privacy</h2>
         <p className="text-muted-foreground">
@@ -122,7 +122,7 @@ function PrivacyPage() {
           If you have questions about this Privacy Policy or how Screenfast handles information,
           contact:
         </p>
-        <p className="font-mono text-sm font-semibold">>anuragf863@gmail.com</p>
+        <p className="font-mono text-sm font-semibold">anuragf863@gmail.com</p>
       </main>
       <Footer />
     </div>
