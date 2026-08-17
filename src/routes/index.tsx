@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, ChevronRight, TrendingUp } from "lucide-react";
 
 import demoPoster from "@/assets/demo-poster.jpg";
 import heroBg from "@/assets/hero-bg.jpg";
+import logo from "@/assets/logo.png";
 import screen1 from "@/assets/screen-1.jpg";
 import screen2 from "@/assets/screen-2.jpg";
 import screen3 from "@/assets/screen-3.jpg";
@@ -12,6 +14,7 @@ import styleSystem from "@/assets/style-system.jpg";
 import { Footer } from "@/components/site/Footer";
 import { Navbar } from "@/components/site/Navbar";
 import { Pricing } from "@/components/site/Pricing";
+import { PromptConsole, type ConsoleTab } from "@/components/site/PromptConsole";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,7 +52,18 @@ const FAQS = [
 
 function Index() {
   const [prompt, setPrompt] = useState("");
+  const [tab, setTab] = useState<ConsoleTab>("describe");
+  const [attachment, setAttachment] = useState<{ name: string; dataUrl: string } | null>(null);
   const navigate = useNavigate();
+
+  const start = () => navigate({ to: "/auth", search: { redirect: "/dashboard" } });
+
+  function readFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => setAttachment({ name: file.name, dataUrl: String(reader.result) });
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="bg-background">
@@ -62,36 +76,64 @@ function Index() {
           aria-hidden
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="grain absolute inset-0 bg-primary-deep/60" />
-        <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center px-5 pb-32 pt-44 text-center">
-          <span className="rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest text-white backdrop-blur">
-            AI product design studio
-          </span>
-          <h1 className="mt-7 font-display text-5xl font-extrabold leading-[0.98] tracking-tight text-white sm:text-7xl">
-            From idea to shippable app UI in minutes.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-white/75">
-            Screenfast turns one sentence into mobile screens, web dashboards and complete design
-            systems — ready to export and build.
-          </p>
+        <div className="grain absolute inset-0 bg-brand-blue/25" />
+        <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-5 pb-40 pt-36 text-center sm:pt-40">
+          <motion.button
+            onClick={start}
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="float-slow group flex items-center gap-3 rounded-full border border-white/25 bg-white/10 py-2 pl-2 pr-4 text-white backdrop-blur-xl"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+              <TrendingUp className="h-4 w-4" />
+            </span>
+            <span className="h-5 w-px bg-white/25" />
+            <span className="text-[15px] font-extrabold">3.2x faster shipping</span>
+            <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </motion.button>
 
-          <div className="mt-10 w-full max-w-2xl rounded-[28px] border border-white/20 bg-white/10 p-2.5 backdrop-blur-xl">
-            <div className="flex flex-col gap-2.5 sm:flex-row">
-              <input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="A meditation app for busy parents…"
-                className="w-full rounded-2xl bg-white px-5 py-4 text-base font-medium text-foreground outline-none"
-              />
-              <button
-                onClick={() => navigate({ to: "/auth", search: { redirect: "/dashboard" } })}
-                className="btn-press inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl px-7 py-4 text-base font-extrabold"
-              >
-                <Sparkles className="h-5 w-5" /> Generate
-              </button>
-            </div>
-          </div>
-          <p className="mt-4 text-sm text-white/60">Plans from $9/mo · Cancel anytime</p>
+          <motion.h1
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
+            className="mt-10 font-display text-[2.75rem] font-extrabold leading-[0.95] tracking-[-0.045em] text-white sm:text-7xl lg:text-[5.5rem]"
+          >
+            From idea to shippable{" "}
+            <img
+              src={logo}
+              alt=""
+              aria-hidden
+              className="inline-block h-[0.85em] w-[0.85em] translate-y-[0.06em] drop-shadow-[0_0_28px_oklch(0.72_0.19_48/0.9)]"
+            />{" "}
+            app design in minutes.
+          </motion.h1>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+            className="mt-14 w-full max-w-3xl"
+          >
+            <PromptConsole
+              value={prompt}
+              onChange={setPrompt}
+              onSubmit={start}
+              tab={tab}
+              onTabChange={setTab}
+              attachment={attachment}
+              onAttach={readFile}
+              onClearAttachment={() => setAttachment(null)}
+              placeholder={
+                tab === "describe"
+                  ? "A meditation app for busy parents — soft, calm, iOS style"
+                  : "Not sure yet? Describe your users and we'll brainstorm the screens."
+              }
+            />
+            <p className="mt-5 text-sm font-semibold text-white/70">
+              Plans from $9/mo · Cancel anytime
+            </p>
+          </motion.div>
         </div>
       </section>
 

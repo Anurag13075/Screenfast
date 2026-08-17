@@ -4,13 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowUp,
   Download,
   Layers,
   Lock,
   Maximize,
   Minus,
-  Paperclip,
   Plus,
   Trash2,
   X,
@@ -18,6 +16,7 @@ import {
 import { toast } from "sonner";
 
 import { getAccount, generateDesign, listGenerations, unlockGeneration } from "@/lib/app.functions";
+import { PromptConsole, type ConsoleTab } from "@/components/site/PromptConsole";
 import { GENERATION_COST, UNLOCK_COST } from "@/lib/plans";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -52,6 +51,7 @@ function CanvasWorkspace() {
   const [mode, setMode] = useState<"mobile" | "web" | "system">("mobile");
   const [style, setStyle] = useState(STYLES[0]!);
   const [reference, setReference] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [tab, setTab] = useState<ConsoleTab>("describe");
   const [focused, setFocused] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [view, setView] = useState({ x: 0, y: 0, z: 1 });
@@ -59,7 +59,6 @@ function CanvasWorkspace() {
   const [selected, setSelected] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const pan = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
   const dragNode = useRef<{ id: string; x: number; y: number; nx: number; ny: number } | null>(null);
@@ -500,71 +499,25 @@ function CanvasWorkspace() {
             ) : null}
           </AnimatePresence>
 
-          {reference ? (
-            <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border bg-card/95 p-2 backdrop-blur">
-              <img src={reference.dataUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
-              <span className="line-clamp-1 flex-1 text-xs font-bold">{reference.name}</span>
-              <button onClick={() => setReference(null)}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ) : null}
-
-          <div
-            className={`flex items-end gap-2 rounded-[28px] border-2 bg-card/95 p-2 pl-3 shadow-[var(--shadow-press)] backdrop-blur transition-colors ${
-              dragOver || focused ? "border-primary" : "border-border"
-            }`}
-          >
-            <button
-              onClick={() => fileRef.current?.click()}
-              title="Attach a reference image"
-              className="rounded-full p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Paperclip className="h-5 w-5" />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) readFile(file);
-                e.target.value = "";
-              }}
-            />
-            <textarea
-              ref={inputRef}
-              rows={1}
+          <div onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}>
+            <PromptConsole
               value={prompt}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (canGenerate) generate.mutate();
-                }
-              }}
-              placeholder="Describe what you want to design…  (⌘K)"
-              className="max-h-32 flex-1 resize-none bg-transparent py-3 text-base font-medium outline-none"
-            />
-            <motion.button
-              whileTap={{ scale: 0.94 }}
+              onChange={setPrompt}
+              onSubmit={() => generate.mutate()}
+              tab={tab}
+              onTabChange={setTab}
+              attachment={reference}
+              onAttach={readFile}
+              onClearAttachment={() => setReference(null)}
+              pending={generate.isPending}
               disabled={!canGenerate}
-              onClick={() => generate.mutate()}
-              className="btn-press flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-40"
-            >
-              {generate.isPending ? (
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="block h-4 w-4 rounded-full border-2 border-current border-t-transparent"
-                />
-              ) : (
-                <ArrowUp className="h-5 w-5" />
-              )}
-            </motion.button>
+              placeholder={
+                tab === "describe"
+                  ? "Describe what you want to design…  (⌘K)"
+                  : "Not sure yet? Describe your users and we'll brainstorm the screens."
+              }
+              className={dragOver ? "ring-2 ring-primary" : ""}
+            />
           </div>
         </motion.div>
       </div>
