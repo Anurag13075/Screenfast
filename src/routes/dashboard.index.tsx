@@ -73,6 +73,8 @@ function CanvasWorkspace() {
   const [history, setHistory] = useState<Record<string, Node>[]>([]);
   const [future, setFuture] = useState<Record<string, Node>[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const undoRef = useRef<() => void>(() => {});
+  const redoRef = useRef<() => void>(() => {});
   const surfaceRef = useRef<HTMLDivElement>(null);
   const pan = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
   const dragNode = useRef<{ id: string; x: number; y: number; nx: number; ny: number } | null>(null);
@@ -120,14 +122,14 @@ function CanvasWorkspace() {
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
-        if (event.shiftKey) redo();
-        else undo();
+        if (event.shiftKey) redoRef.current();
+        else undoRef.current();
       }
       if (event.key === "Escape") setSelected(null);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo]);
+  }, []);
 
   const generate = useMutation({
     mutationFn: () =>
@@ -258,6 +260,9 @@ function CanvasWorkspace() {
       return f.slice(1);
     });
   }, [nodes]);
+
+  undoRef.current = undo;
+  redoRef.current = redo;
 
   async function exportBoardPdf() {
     const withUrls = items.filter((item) => item.url && item.unlocked);
