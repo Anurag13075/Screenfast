@@ -16,6 +16,15 @@ import {
 import { toast } from "sonner";
 
 import { getAccount, generateDesign, listGenerations, unlockGeneration } from "@/lib/app.functions";
+import {
+  buildHandoff,
+  deleteGeneration,
+  exportCode,
+  getCanvas,
+  refineDesign,
+  saveCanvas,
+  toggleFavorite,
+} from "@/lib/app.functions";
 import { PromptConsole, type ConsoleTab } from "@/components/site/PromptConsole";
 import { GENERATION_COST, UNLOCK_COST } from "@/lib/plans";
 
@@ -58,6 +67,11 @@ function CanvasWorkspace() {
   const [nodes, setNodes] = useState<Record<string, Node>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(true);
+  const [variations, setVariations] = useState(1);
+  const [refineText, setRefineText] = useState("");
+  const [output, setOutput] = useState<{ title: string; body: string } | null>(null);
+  const [history, setHistory] = useState<Record<string, Node>[]>([]);
+  const [future, setFuture] = useState<Record<string, Node>[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const pan = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
@@ -69,6 +83,13 @@ function CanvasWorkspace() {
 
   const generateFn = useServerFn(generateDesign);
   const unlockFn = useServerFn(unlockGeneration);
+  const refineFn = useServerFn(refineDesign);
+  const codeFn = useServerFn(exportCode);
+  const handoffFn = useServerFn(buildHandoff);
+  const favoriteFn = useServerFn(toggleFavorite);
+  const deleteFn = useServerFn(deleteGeneration);
+  const saveCanvasFn = useServerFn(saveCanvas);
+  const canvasState = useQuery({ queryKey: ["canvas"], queryFn: () => getCanvas() });
 
   const items = useMemo(() => generations.data ?? [], [generations.data]);
 
@@ -110,6 +131,7 @@ function CanvasWorkspace() {
           prompt,
           mode,
           style,
+          variations,
           ...(reference ? { reference: reference.dataUrl } : {}),
         },
       }),
@@ -122,15 +144,139 @@ function CanvasWorkspace() {
         );
         return;
       }
-      toast.success("Design placed on your canvas");
+      toast.success(
+        result.generations.length > 1
+          ? `${result.generations.length} variations placed on your canvas`
+          : "Design placed on your canvas",
+      );
       setPrompt("");
       setReference(null);
-      setSelected(result.generation.id);
+      setSelected(result.generations[0]?.id ?? null);
       queryClient.invalidateQueries({ queryKey: ["generations"] });
       queryClient.invalidateQueries({ queryKey: ["account"] });
     },
     onError: () => toast.error("Generation failed"),
   });
+
+  const refine = useMutation({
+    mutationFn: (input: { id: string; instruction: string }) => refineFn({ data: input }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(result.error === "not_enough_credits" ? "Out of credits" : "Edit failed");
+        return;
+      }
+      toast.success("Edited frame added to canvas");
+      setRefineText("");
+      setSelected(result.generation.id);
+      queryClient.invalidateQueries({ queryKey: ["generations"] });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+
+  const codeExport = useMutation({
+    mutationFn: (input: { id: string; target: "react" | "html" }) => codeFn({ data: input }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(result.error === "locked" ? "Unlock the export first" : "Code export failed");
+        return;
+      }
+      setOutput({ title: "Generated code", body: result.code });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+
+  const handoff = useMutation({
+    mutationFn: (id: string) => handoffFn({ data: { id } }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error("Handoff spec failed");
+        return;
+      }
+      setOutput({ title: "Developer handoff spec", body: result.spec });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+
+  const favorite = useMutation({
+    mutationFn: (input: { id: string; favorite: boolean }) => favoriteFn({ data: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["generations"] }),
+  });
+
+  const removeFrame = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      setSelected(null);
+      queryClient.invalidateQueries({ queryKey: ["generations"] });
+    },
+  });
+
+  // Restore the saved canvas layout once.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !canvasState.data) return;
+    const saved = (canvasState.data as { nodes?: Record<string, Node> }).nodes;
+    if (saved && Object.keys(saved).length) {
+      restored.current = true;
+      setNodes((current) => ({ ...current, ...saved }));
+    }
+  }, [canvasState.data]);
+
+  // Debounced cloud autosave of the layout.
+  useEffect(() => {
+    if (!Object.keys(nodes).length) return;
+    const timer = setTimeout(() => {
+      saveCanvasFn({ data: { data: { nodes } } }).catch(() => undefined);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [nodes, saveCanvasFn]);
+
+  const pushHistory = useCallback(() => {
+    setHistory((h) => [...h.slice(-49), nodes]);
+    setFuture([]);
+  }, [nodes]);
+
+  const undo = useCallback(() => {
+    setHistory((h) => {
+      if (!h.length) return h;
+      const previous = h[h.length - 1]!;
+      setFuture((f) => [nodes, ...f].slice(0, 50));
+      setNodes(previous);
+      return h.slice(0, -1);
+    });
+  }, [nodes]);
+
+  const redo = useCallback(() => {
+    setFuture((f) => {
+      if (!f.length) return f;
+      setHistory((h) => [...h, nodes]);
+      setNodes(f[0]!);
+      return f.slice(1);
+    });
+  }, [nodes]);
+
+  async function exportBoardPdf() {
+    const withUrls = items.filter((item) => item.url && item.unlocked);
+    if (!withUrls.length) {
+      toast.error("Unlock at least one frame to export the board");
+      return;
+    }
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    for (let index = 0; index < withUrls.length; index += 1) {
+      const item = withUrls[index]!;
+      const blob = await fetch(item.url!).then((r) => r.blob());
+      const dataUrl: string = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsDataURL(blob);
+      });
+      if (index > 0) doc.addPage();
+      doc.addImage(dataUrl, "PNG", 40, 60, 760, 460, undefined, "FAST");
+      doc.setFontSize(11);
+      doc.text(item.prompt.slice(0, 110), 40, 40);
+    }
+    doc.save("screenfast-board.pdf");
+  }
 
   const unlock = useMutation({
     mutationFn: (id: string) => unlockFn({ data: { id } }),
