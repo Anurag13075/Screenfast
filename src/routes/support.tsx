@@ -57,7 +57,7 @@ function SupportPage() {
 
         <h2 className="pt-4 text-2xl font-extrabold">Billing and refunds</h2>
         <p className="text-muted-foreground">
-          For billing or refund questions, contact support@screenfast.app. See our{" "}
+          For billing or refund questions, contact anuragf863@gmail.com . See our{" "}
           <a href="/refund" className="text-primary hover:underline">
             Refund Policy
           </a>{" "}
@@ -65,7 +65,7 @@ function SupportPage() {
         </p>
 
         <h2 className="pt-4 text-2xl font-extrabold">Contact support</h2>
-        <p className="font-mono text-sm font-semibold">support@screenfast.app</p>
+        <p className="font-mono text-sm font-semibold">anuragf863@gmail.com</p>
         <p className="text-muted-foreground">Response time: within one business day</p>
       </main>
       <Footer />
