@@ -118,11 +118,16 @@ function CanvasWorkspace() {
         event.preventDefault();
         inputRef.current?.focus();
       }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      }
       if (event.key === "Escape") setSelected(null);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [undo, redo]);
 
   const generate = useMutation({
     mutationFn: () =>
@@ -330,7 +335,8 @@ function CanvasWorkspace() {
       const d = dragNode.current;
       const dx = (event.clientX - d.x) / view.z;
       const dy = (event.clientY - d.y) / view.z;
-      setNodes((n) => ({ ...n, [d.id]: { ...n[d.id]!, x: d.nx + dx, y: d.ny + dy } }));
+      const snap = (value: number) => Math.round(value / 8) * 8;
+      setNodes((n) => ({ ...n, [d.id]: { ...n[d.id]!, x: snap(d.nx + dx), y: snap(d.ny + dy) } }));
       return;
     }
     if (!pan.current) return;
@@ -463,6 +469,21 @@ function CanvasWorkspace() {
           >
             <Layers className="h-4 w-4" /> Layers
           </button>
+          <button onClick={undo} disabled={!history.length} className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-bold backdrop-blur disabled:opacity-40">Undo</button>
+          <button onClick={redo} disabled={!future.length} className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-bold backdrop-blur disabled:opacity-40">Redo</button>
+          <button onClick={exportBoardPdf} className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-bold backdrop-blur">Export board PDF</button>
+          <div className="flex items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-1.5 backdrop-blur">
+            <span className="px-1 text-xs font-bold text-muted-foreground">Variations</span>
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                onClick={() => setVariations(n)}
+                className={`h-7 w-7 rounded-full text-xs font-extrabold ${variations === n ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="pointer-events-auto flex items-center gap-2">
           <div className="rounded-full bg-accent px-4 py-2 text-sm font-extrabold text-accent-foreground">
@@ -546,14 +567,65 @@ function CanvasWorkspace() {
                       className="mt-2 w-full"
                     />
                   </label>
+                  <div className="space-y-2">
+                    <input
+                      value={refineText}
+                      onChange={(e) => setRefineText(e.target.value)}
+                      placeholder="Edit this frame: make it darker…"
+                      className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={() => refine.mutate({ id: selected, instruction: refineText })}
+                      disabled={refineText.trim().length < 3 || refine.isPending}
+                      className="btn-press w-full rounded-full px-4 py-2 text-sm font-extrabold disabled:opacity-50"
+                    >
+                      {refine.isPending ? "Editing…" : "AI edit in place"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => codeExport.mutate({ id: selected, target: "react" })}
+                      disabled={codeExport.isPending}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      {codeExport.isPending ? "…" : "Export React"}
+                    </button>
+                    <button
+                      onClick={() => codeExport.mutate({ id: selected, target: "html" })}
+                      disabled={codeExport.isPending}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      Export HTML
+                    </button>
+                    <button
+                      onClick={() => handoff.mutate(selected)}
+                      disabled={handoff.isPending}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      {handoff.isPending ? "…" : "Handoff spec"}
+                    </button>
+                    <button
+                      onClick={() => favorite.mutate({ id: selected, favorite: !item.favorite })}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      {item.favorite ? "★ Favourited" : "☆ Favourite"}
+                    </button>
+                  </div>
                   <button
                     onClick={() => {
+                      pushHistory();
                       setPrompt(`${item.prompt} — `);
                       inputRef.current?.focus();
                     }}
                     className="w-full rounded-full border border-border px-4 py-2 text-sm font-bold"
                   >
-                    Re-prompt this frame
+                    Re-prompt as new frame
+                  </button>
+                  <button
+                    onClick={() => removeFrame.mutate(selected)}
+                    className="w-full rounded-full border border-destructive/40 px-4 py-2 text-sm font-bold text-destructive"
+                  >
+                    Delete design permanently
                   </button>
                   {item.unlocked && item.url ? (
                     <a
@@ -667,6 +739,38 @@ function CanvasWorkspace() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {output ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-foreground/40 p-6 backdrop-blur"
+          >
+            <div className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-[26px] border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <p className="font-extrabold">{output.title}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(output.body);
+                      toast.success("Copied");
+                    }}
+                    className="rounded-full border border-border px-4 py-1.5 text-sm font-bold"
+                  >
+                    Copy
+                  </button>
+                  <button onClick={() => setOutput(null)} className="rounded-full p-2 hover:bg-muted">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <pre className="overflow-auto whitespace-pre-wrap px-5 py-4 text-xs leading-relaxed">{output.body}</pre>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence>
         {dragOver ? (
