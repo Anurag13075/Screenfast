@@ -50,7 +50,7 @@ function RefundPage() {
 
         <h2 className="pt-4 text-2xl font-extrabold">How to request a refund</h2>
         <p className="text-muted-foreground">
-          To request a refund, email support@screenfast.app from your account email address within
+          To request a refund, email >anuragf863@gmail.com from your account email address within
           14 days of your charge. Include your order details and the reason for your refund request.
           You may also reply directly to your Paddle receipt email.
         </p>
@@ -63,11 +63,11 @@ function RefundPage() {
         </p>
 
         <h2 className="pt-4 text-2xl font-extrabold">Support email</h2>
-        <p className="font-mono text-sm font-semibold">support@screenfast.app</p>
+        <p className="font-mono text-sm font-semibold">anuragf863@gmail.com</p>
 
         <h2 className="pt-4 text-2xl font-extrabold">Questions</h2>
         <p className="text-muted-foreground">
-          If you have questions about refunds or your billing, contact support@screenfast.app.
+          If you have questions about refunds or your billing, contact >anuragf863@gmail.com
         </p>
       </main>
       <Footer />
