@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-
 import { Footer } from "@/components/site/Footer";
 import { Navbar } from "@/components/site/Navbar";
 
@@ -25,7 +24,6 @@ function SupportPage() {
           Questions about billing, subscriptions, credits, or generations? We aim to respond within
           one business day.
         </p>
-
         <h2 className="pt-4 text-2xl font-extrabold">How credits work</h2>
         <ul className="list-inside list-disc space-y-2 text-muted-foreground">
           <li>
@@ -44,7 +42,6 @@ function SupportPage() {
             <strong>Create handoff spec:</strong> 1 credit
           </li>
         </ul>
-
         <h2 className="pt-4 text-2xl font-extrabold">Credit refresh and expiration</h2>
         <ul className="list-inside list-disc space-y-2 text-muted-foreground">
           <li>
@@ -54,16 +51,14 @@ function SupportPage() {
             <strong>Top-up credits:</strong> Do not expire while your plan is active
           </li>
         </ul>
-
         <h2 className="pt-4 text-2xl font-extrabold">Billing and refunds</h2>
         <p className="text-muted-foreground">
-          For billing or refund questions, contact anuragf863@gmail.com . See our{" "}
+          For billing or refund questions, contact anuragf863@gmail.com. See our{" "}
           <a href="/refund" className="text-primary hover:underline">
             Refund Policy
           </a>{" "}
           for details on refund eligibility.
         </p>
-
         <h2 className="pt-4 text-2xl font-extrabold">Contact support</h2>
         <p className="font-mono text-sm font-semibold">anuragf863@gmail.com</p>
         <p className="text-muted-foreground">Response time: within one business day</p>
