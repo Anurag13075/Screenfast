@@ -4,13 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowUp,
   Download,
   Layers,
   Lock,
   Maximize,
   Minus,
-  Paperclip,
   Plus,
   Trash2,
   X,
