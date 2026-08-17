@@ -22,9 +22,10 @@ function TermsPage() {
       <main className="mx-auto max-w-3xl space-y-6 px-5 pb-24 pt-36">
         <h1 className="font-display text-5xl font-extrabold tracking-tight">Terms of Service</h1>
         <p className="text-muted-foreground">
-          By using Screenfast you agree to these terms. Screenfast generates UI design imagery from
-          the prompts you provide. You are responsible for the prompts you submit and for ensuring
-          your use of generated output complies with applicable law.
+          Screenfast is operated by Anurag ("we", "us", "our"). By using Screenfast you agree to
+          these terms. Screenfast generates UI design imagery from the prompts you provide. You are
+          responsible for the prompts you submit and for ensuring your use of generated output
+          complies with applicable law.
         </p>
 
         <h2 className="pt-4 text-2xl font-extrabold">What Screenfast provides</h2>
@@ -105,7 +106,7 @@ function TermsPage() {
 
         <h2 className="pt-4 text-2xl font-extrabold">Contact</h2>
         <p className="text-muted-foreground">For questions or legal requests, contact:</p>
-        <p className="font-mono text-sm font-semibold">support@screenfast.app</p>
+        <p className="font-mono text-sm font-semibold">anuragf863@gmail.com</p>
       </main>
       <Footer />
     </div>
