@@ -214,7 +214,7 @@ function CanvasWorkspace() {
   const restored = useRef(false);
   useEffect(() => {
     if (restored.current || !canvasState.data) return;
-    const saved = (canvasState.data as { nodes?: Record<string, Node> }).nodes;
+    const saved = (JSON.parse(canvasState.data || "{}") as { nodes?: Record<string, Node> }).nodes;
     if (saved && Object.keys(saved).length) {
       restored.current = true;
       setNodes((current) => ({ ...current, ...saved }));
@@ -225,7 +225,7 @@ function CanvasWorkspace() {
   useEffect(() => {
     if (!Object.keys(nodes).length) return;
     const timer = setTimeout(() => {
-      saveCanvasFn({ data: { data: { nodes } } }).catch(() => undefined);
+      saveCanvasFn({ data: { data: JSON.stringify({ nodes }) } }).catch(() => undefined);
     }, 1200);
     return () => clearTimeout(timer);
   }, [nodes, saveCanvasFn]);

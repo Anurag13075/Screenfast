@@ -368,17 +368,17 @@ export const getCanvas = createServerFn({ method: "GET" })
       .select("data")
       .eq("user_id", context.userId)
       .maybeSingle();
-    return (data?.data ?? {}) as Record<string, unknown>;
+    return JSON.stringify(data?.data ?? {});
   });
 
 export const saveCanvas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ data: z.record(z.string(), z.any()) }).parse(input))
+  .inputValidator((input: unknown) => z.object({ data: z.string().max(500_000) }).parse(input))
   .handler(async ({ data, context }) => {
     await context.supabase
       .from("canvas_state")
       .upsert(
-        { user_id: context.userId, data: data.data as never, updated_at: new Date().toISOString() },
+        { user_id: context.userId, data: JSON.parse(data.data) as never, updated_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
     return { ok: true as const };
