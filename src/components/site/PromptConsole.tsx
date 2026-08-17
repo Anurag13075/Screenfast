@@ -1,10 +1,31 @@
 import { motion } from "framer-motion";
-import { Paperclip, Sparkles, X } from "lucide-react";
-import { useRef } from "react";
+import { Mic, Paperclip, Sparkles, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 export type ConsoleTab = "describe" | "brainstorm";
 
 type Attachment = { name: string; dataUrl: string };
+
+// Minimal shape for the Web Speech API — not in default TS lib DOM types.
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: any) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionLike;
+    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
 
 export function PromptConsole({
   value,
@@ -34,6 +55,50 @@ export function PromptConsole({
   className?: string;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const baseValueRef = useRef("");
+
+  useEffect(() => {
+    setVoiceSupported(Boolean(getSpeechRecognition()));
+  }, []);
+
+  function toggleVoice() {
+    const SpeechRecognitionCtor = getSpeechRecognition();
+    if (!SpeechRecognitionCtor) return;
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    baseValueRef.current = value ? `${value} ` : "";
+
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        transcript += event.results[i][0].transcript;
+      }
+      onChange(`${baseValueRef.current}${transcript}`);
+    };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
 
   return (
     <motion.div
@@ -58,19 +123,31 @@ export function PromptConsole({
         </div>
       ) : null}
 
-      <textarea
-        rows={3}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            if (!disabled && !pending) onSubmit();
-          }
-        }}
-        placeholder={placeholder}
-        className="w-full resize-none bg-transparent px-2 pb-4 pt-2 text-[17px] font-medium leading-relaxed text-white outline-none placeholder:text-white/45"
-      />
+      <div className="relative">
+        <textarea
+          rows={3}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              if (!disabled && !pending) onSubmit();
+            }
+          }}
+          placeholder={listening ? "Listening..." : placeholder}
+          className="w-full resize-none bg-transparent px-2 pb-4 pt-2 text-[17px] font-medium leading-relaxed text-white outline-none placeholder:text-white/45"
+        />
+        {listening ? (
+          <span className="pointer-events-none absolute right-2 top-2 flex items-center gap-1.5 rounded-full bg-red-500/20 px-2.5 py-1 text-xs font-bold text-red-300">
+            <motion.span
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+              className="h-1.5 w-1.5 rounded-full bg-red-400"
+            />
+            Listening
+          </span>
+        ) : null}
+      </div>
 
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -117,6 +194,22 @@ export function PromptConsole({
                 }}
               />
             </>
+          ) : null}
+
+          {voiceSupported ? (
+            <button
+              type="button"
+              onClick={toggleVoice}
+              title={listening ? "Stop voice input" : "Describe your idea by voice"}
+              aria-label={listening ? "Stop voice input" : "Describe your idea by voice"}
+              className={`rounded-full p-2.5 transition-colors ${
+                listening
+                  ? "bg-red-500/25 text-red-300 hover:bg-red-500/35"
+                  : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
+              }`}
+            >
+              <Mic className="h-[18px] w-[18px]" />
+            </button>
           ) : null}
         </div>
 
