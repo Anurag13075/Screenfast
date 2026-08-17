@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      canvas_state: {
+        Row: {
+          data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       credit_balances: {
         Row: {
           credits: number
@@ -65,33 +83,77 @@ export type Database = {
       generations: {
         Row: {
           created_at: string
+          favorite: boolean
           id: string
           image_url: string | null
           mode: Database["public"]["Enums"]["gen_mode"]
+          parent_id: string | null
           prompt: string
           style: string
           unlocked: boolean
           user_id: string
+          variation_group: string | null
         }
         Insert: {
           created_at?: string
+          favorite?: boolean
           id?: string
           image_url?: string | null
           mode?: Database["public"]["Enums"]["gen_mode"]
+          parent_id?: string | null
           prompt: string
           style?: string
           unlocked?: boolean
           user_id: string
+          variation_group?: string | null
         }
         Update: {
           created_at?: string
+          favorite?: boolean
           id?: string
           image_url?: string | null
           mode?: Database["public"]["Enums"]["gen_mode"]
+          parent_id?: string | null
           prompt?: string
           style?: string
           unlocked?: boolean
           user_id?: string
+          variation_group?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generations_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          payload: Json | null
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          provider?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          provider?: string
         }
         Relationships: []
       }

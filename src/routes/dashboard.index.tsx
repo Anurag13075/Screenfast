@@ -16,6 +16,15 @@ import {
 import { toast } from "sonner";
 
 import { getAccount, generateDesign, listGenerations, unlockGeneration } from "@/lib/app.functions";
+import {
+  buildHandoff,
+  deleteGeneration,
+  exportCode,
+  getCanvas,
+  refineDesign,
+  saveCanvas,
+  toggleFavorite,
+} from "@/lib/app.functions";
 import { PromptConsole, type ConsoleTab } from "@/components/site/PromptConsole";
 import { GENERATION_COST, UNLOCK_COST } from "@/lib/plans";
 
@@ -58,7 +67,14 @@ function CanvasWorkspace() {
   const [nodes, setNodes] = useState<Record<string, Node>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(true);
+  const [variations, setVariations] = useState(1);
+  const [refineText, setRefineText] = useState("");
+  const [output, setOutput] = useState<{ title: string; body: string } | null>(null);
+  const [history, setHistory] = useState<Record<string, Node>[]>([]);
+  const [future, setFuture] = useState<Record<string, Node>[]>([]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const undoRef = useRef<() => void>(() => {});
+  const redoRef = useRef<() => void>(() => {});
   const surfaceRef = useRef<HTMLDivElement>(null);
   const pan = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
   const dragNode = useRef<{ id: string; x: number; y: number; nx: number; ny: number } | null>(null);
@@ -69,6 +85,13 @@ function CanvasWorkspace() {
 
   const generateFn = useServerFn(generateDesign);
   const unlockFn = useServerFn(unlockGeneration);
+  const refineFn = useServerFn(refineDesign);
+  const codeFn = useServerFn(exportCode);
+  const handoffFn = useServerFn(buildHandoff);
+  const favoriteFn = useServerFn(toggleFavorite);
+  const deleteFn = useServerFn(deleteGeneration);
+  const saveCanvasFn = useServerFn(saveCanvas);
+  const canvasState = useQuery({ queryKey: ["canvas"], queryFn: () => getCanvas() });
 
   const items = useMemo(() => generations.data ?? [], [generations.data]);
 
@@ -97,6 +120,11 @@ function CanvasWorkspace() {
         event.preventDefault();
         inputRef.current?.focus();
       }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redoRef.current();
+        else undoRef.current();
+      }
       if (event.key === "Escape") setSelected(null);
     }
     window.addEventListener("keydown", onKey);
@@ -110,6 +138,7 @@ function CanvasWorkspace() {
           prompt,
           mode,
           style,
+          variations,
           ...(reference ? { reference: reference.dataUrl } : {}),
         },
       }),
@@ -122,15 +151,142 @@ function CanvasWorkspace() {
         );
         return;
       }
-      toast.success("Design placed on your canvas");
+      toast.success(
+        result.generations.length > 1
+          ? `${result.generations.length} variations placed on your canvas`
+          : "Design placed on your canvas",
+      );
       setPrompt("");
       setReference(null);
-      setSelected(result.generation.id);
+      setSelected(result.generations[0]?.id ?? null);
       queryClient.invalidateQueries({ queryKey: ["generations"] });
       queryClient.invalidateQueries({ queryKey: ["account"] });
     },
     onError: () => toast.error("Generation failed"),
   });
+
+  const refine = useMutation({
+    mutationFn: (input: { id: string; instruction: string }) => refineFn({ data: input }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(result.error === "not_enough_credits" ? "Out of credits" : "Edit failed");
+        return;
+      }
+      toast.success("Edited frame added to canvas");
+      setRefineText("");
+      setSelected(result.generation.id);
+      queryClient.invalidateQueries({ queryKey: ["generations"] });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+
+  const codeExport = useMutation({
+    mutationFn: (input: { id: string; target: "react" | "html" }) => codeFn({ data: input }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(result.error === "locked" ? "Unlock the export first" : "Code export failed");
+        return;
+      }
+      setOutput({ title: "Generated code", body: result.code });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+
+  const handoff = useMutation({
+    mutationFn: (id: string) => handoffFn({ data: { id } }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error("Handoff spec failed");
+        return;
+      }
+      setOutput({ title: "Developer handoff spec", body: result.spec });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+  });
+
+  const favorite = useMutation({
+    mutationFn: (input: { id: string; favorite: boolean }) => favoriteFn({ data: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["generations"] }),
+  });
+
+  const removeFrame = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      setSelected(null);
+      queryClient.invalidateQueries({ queryKey: ["generations"] });
+    },
+  });
+
+  // Restore the saved canvas layout once.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !canvasState.data) return;
+    const saved = (JSON.parse(canvasState.data || "{}") as { nodes?: Record<string, Node> }).nodes;
+    if (saved && Object.keys(saved).length) {
+      restored.current = true;
+      setNodes((current) => ({ ...current, ...saved }));
+    }
+  }, [canvasState.data]);
+
+  // Debounced cloud autosave of the layout.
+  useEffect(() => {
+    if (!Object.keys(nodes).length) return;
+    const timer = setTimeout(() => {
+      saveCanvasFn({ data: { data: JSON.stringify({ nodes }) } }).catch(() => undefined);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [nodes, saveCanvasFn]);
+
+  const pushHistory = useCallback(() => {
+    setHistory((h) => [...h.slice(-49), nodes]);
+    setFuture([]);
+  }, [nodes]);
+
+  const undo = useCallback(() => {
+    setHistory((h) => {
+      if (!h.length) return h;
+      const previous = h[h.length - 1]!;
+      setFuture((f) => [nodes, ...f].slice(0, 50));
+      setNodes(previous);
+      return h.slice(0, -1);
+    });
+  }, [nodes]);
+
+  const redo = useCallback(() => {
+    setFuture((f) => {
+      if (!f.length) return f;
+      setHistory((h) => [...h, nodes]);
+      setNodes(f[0]!);
+      return f.slice(1);
+    });
+  }, [nodes]);
+
+  undoRef.current = undo;
+  redoRef.current = redo;
+
+  async function exportBoardPdf() {
+    const withUrls = items.filter((item) => item.url && item.unlocked);
+    if (!withUrls.length) {
+      toast.error("Unlock at least one frame to export the board");
+      return;
+    }
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    for (let index = 0; index < withUrls.length; index += 1) {
+      const item = withUrls[index]!;
+      const blob = await fetch(item.url!).then((r) => r.blob());
+      const dataUrl: string = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsDataURL(blob);
+      });
+      if (index > 0) doc.addPage();
+      doc.addImage(dataUrl, "PNG", 40, 60, 760, 460, undefined, "FAST");
+      doc.setFontSize(11);
+      doc.text(item.prompt.slice(0, 110), 40, 40);
+    }
+    doc.save("screenfast-board.pdf");
+  }
 
   const unlock = useMutation({
     mutationFn: (id: string) => unlockFn({ data: { id } }),
@@ -184,7 +340,8 @@ function CanvasWorkspace() {
       const d = dragNode.current;
       const dx = (event.clientX - d.x) / view.z;
       const dy = (event.clientY - d.y) / view.z;
-      setNodes((n) => ({ ...n, [d.id]: { ...n[d.id]!, x: d.nx + dx, y: d.ny + dy } }));
+      const snap = (value: number) => Math.round(value / 8) * 8;
+      setNodes((n) => ({ ...n, [d.id]: { ...n[d.id]!, x: snap(d.nx + dx), y: snap(d.ny + dy) } }));
       return;
     }
     if (!pan.current) return;
@@ -317,6 +474,21 @@ function CanvasWorkspace() {
           >
             <Layers className="h-4 w-4" /> Layers
           </button>
+          <button onClick={undo} disabled={!history.length} className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-bold backdrop-blur disabled:opacity-40">Undo</button>
+          <button onClick={redo} disabled={!future.length} className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-bold backdrop-blur disabled:opacity-40">Redo</button>
+          <button onClick={exportBoardPdf} className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-bold backdrop-blur">Export board PDF</button>
+          <div className="flex items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-1.5 backdrop-blur">
+            <span className="px-1 text-xs font-bold text-muted-foreground">Variations</span>
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                onClick={() => setVariations(n)}
+                className={`h-7 w-7 rounded-full text-xs font-extrabold ${variations === n ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="pointer-events-auto flex items-center gap-2">
           <div className="rounded-full bg-accent px-4 py-2 text-sm font-extrabold text-accent-foreground">
@@ -400,14 +572,65 @@ function CanvasWorkspace() {
                       className="mt-2 w-full"
                     />
                   </label>
+                  <div className="space-y-2">
+                    <input
+                      value={refineText}
+                      onChange={(e) => setRefineText(e.target.value)}
+                      placeholder="Edit this frame: make it darker…"
+                      className="w-full rounded-2xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={() => refine.mutate({ id: selected, instruction: refineText })}
+                      disabled={refineText.trim().length < 3 || refine.isPending}
+                      className="btn-press w-full rounded-full px-4 py-2 text-sm font-extrabold disabled:opacity-50"
+                    >
+                      {refine.isPending ? "Editing…" : "AI edit in place"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => codeExport.mutate({ id: selected, target: "react" })}
+                      disabled={codeExport.isPending}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      {codeExport.isPending ? "…" : "Export React"}
+                    </button>
+                    <button
+                      onClick={() => codeExport.mutate({ id: selected, target: "html" })}
+                      disabled={codeExport.isPending}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      Export HTML
+                    </button>
+                    <button
+                      onClick={() => handoff.mutate(selected)}
+                      disabled={handoff.isPending}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      {handoff.isPending ? "…" : "Handoff spec"}
+                    </button>
+                    <button
+                      onClick={() => favorite.mutate({ id: selected, favorite: !item.favorite })}
+                      className="rounded-full border border-border px-3 py-2 text-xs font-bold"
+                    >
+                      {item.favorite ? "★ Favourited" : "☆ Favourite"}
+                    </button>
+                  </div>
                   <button
                     onClick={() => {
+                      pushHistory();
                       setPrompt(`${item.prompt} — `);
                       inputRef.current?.focus();
                     }}
                     className="w-full rounded-full border border-border px-4 py-2 text-sm font-bold"
                   >
-                    Re-prompt this frame
+                    Re-prompt as new frame
+                  </button>
+                  <button
+                    onClick={() => removeFrame.mutate(selected)}
+                    className="w-full rounded-full border border-destructive/40 px-4 py-2 text-sm font-bold text-destructive"
+                  >
+                    Delete design permanently
                   </button>
                   {item.unlocked && item.url ? (
                     <a
@@ -521,6 +744,38 @@ function CanvasWorkspace() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {output ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-foreground/40 p-6 backdrop-blur"
+          >
+            <div className="flex max-h-full w-full max-w-3xl flex-col overflow-hidden rounded-[26px] border border-border bg-card">
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <p className="font-extrabold">{output.title}</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(output.body);
+                      toast.success("Copied");
+                    }}
+                    className="rounded-full border border-border px-4 py-1.5 text-sm font-bold"
+                  >
+                    Copy
+                  </button>
+                  <button onClick={() => setOutput(null)} className="rounded-full p-2 hover:bg-muted">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <pre className="overflow-auto whitespace-pre-wrap px-5 py-4 text-xs leading-relaxed">{output.body}</pre>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence>
         {dragOver ? (

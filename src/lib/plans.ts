@@ -20,3 +20,6 @@ export const TOPUPS = [
 
 export const GENERATION_COST = 1;
 export const UNLOCK_COST = 2;
+export const REFINE_COST = 1;
+export const CODE_EXPORT_COST = 2;
+export const HANDOFF_COST = 1;
