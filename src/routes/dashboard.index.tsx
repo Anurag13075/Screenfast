@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 
 import { getAccount, generateDesign, listGenerations, unlockGeneration } from "@/lib/app.functions";
+import { PromptConsole, type ConsoleTab } from "@/components/site/PromptConsole";
 import { GENERATION_COST, UNLOCK_COST } from "@/lib/plans";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -52,6 +53,7 @@ function CanvasWorkspace() {
   const [mode, setMode] = useState<"mobile" | "web" | "system">("mobile");
   const [style, setStyle] = useState(STYLES[0]!);
   const [reference, setReference] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [tab, setTab] = useState<ConsoleTab>("describe");
   const [focused, setFocused] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [view, setView] = useState({ x: 0, y: 0, z: 1 });
@@ -59,7 +61,6 @@ function CanvasWorkspace() {
   const [selected, setSelected] = useState<string | null>(null);
   const [showLayers, setShowLayers] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const pan = useRef<{ x: number; y: number; vx: number; vy: number } | null>(null);
   const dragNode = useRef<{ id: string; x: number; y: number; nx: number; ny: number } | null>(null);
