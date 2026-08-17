@@ -17,10 +17,13 @@ export function Footer() {
           <Link to="/terms" className="hover:text-foreground">
             Terms
           </Link>
-          <Link to="/refund" className="hover:text-foreground">
-            Refund policy
+          <Link to="/privacy" className="hover:text-foreground">
+            Privacy Policy
           </Link>
-          <Link to="/dashboard/support" className="hover:text-foreground">
+          <Link to="/refund" className="hover:text-foreground">
+            Refund Policy
+          </Link>
+          <Link to="/support" className="hover:text-foreground">
             Support
           </Link>
         </div>
