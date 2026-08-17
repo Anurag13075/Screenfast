@@ -383,3 +383,91 @@ export const saveCanvas = createServerFn({ method: "POST" })
       );
     return { ok: true as const };
   });
+
+const styleGridSchema = z.object({
+  prompt: z.string().trim().min(6).max(600),
+  mode: z.enum(["mobile", "web", "system"]),
+  styles: z.array(z.string().trim().min(2).max(40)).min(2).max(4),
+  reference: z.string().startsWith("data:image/").max(8_000_000).optional(),
+});
+
+export const generateStyleGrid = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => styleGridSchema.parse(input))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ ok: true; generations: GenerationRow[] } | { ok: false; error: string }> => {
+      const { userId } = context;
+      const unlimited = isUnlimited(context.claims);
+      const count = data.styles.length;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { GENERATION_SELECT, renderImage, signRows, uploadDesign } = await import(
+        "@/lib/generate.server"
+      );
+
+      if (!unlimited) {
+        const spend = await supabaseAdmin.rpc("spend_credits", {
+          _user_id: userId,
+          _amount: GENERATION_COST * count,
+          _reason: "style_grid",
+        });
+        if (spend.error) return { ok: false, error: "not_enough_credits" };
+      }
+
+      const group = crypto.randomUUID();
+
+      const images = await Promise.all(
+        data.styles.map((style) =>
+          renderImage(buildDesignPrompt(data.prompt, data.mode, style), data.reference),
+        ),
+      );
+
+      const good = images
+        .map((b64, index) => ({ b64, style: data.styles[index]! }))
+        .filter((row): row is { b64: string; style: string } => Boolean(row.b64));
+
+      if (good.length === 0) {
+        if (!unlimited) {
+          await supabaseAdmin.rpc("grant_credits", {
+            _user_id: userId,
+            _amount: GENERATION_COST * count,
+            _reason: "refund_failed_style_grid",
+          });
+        }
+        return { ok: false, error: "generation_failed" };
+      }
+
+      if (!unlimited && good.length < count) {
+        await supabaseAdmin.rpc("grant_credits", {
+          _user_id: userId,
+          _amount: GENERATION_COST * (count - good.length),
+          _reason: "refund_partial_style_grid",
+        });
+      }
+
+      const rows = [];
+      for (const { b64, style } of good) {
+        const path = await uploadDesign(userId, b64);
+        if (!path) continue;
+        const insert = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: userId,
+            prompt: data.prompt,
+            mode: data.mode,
+            style,
+            image_url: path,
+            variation_group: group,
+            ...(unlimited ? { unlocked: true } : {}),
+          })
+          .select(GENERATION_SELECT)
+          .single();
+        if (insert.data) rows.push(insert.data);
+      }
+
+      if (rows.length === 0) return { ok: false, error: "storage_failed" };
+      return { ok: true, generations: await signRows(rows) };
+    },
+  );
