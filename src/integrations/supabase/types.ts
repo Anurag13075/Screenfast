@@ -82,6 +82,7 @@ export type Database = {
       }
       generations: {
         Row: {
+          breakpoint: string | null
           created_at: string
           favorite: boolean
           id: string
@@ -95,6 +96,7 @@ export type Database = {
           variation_group: string | null
         }
         Insert: {
+          breakpoint?: string | null
           created_at?: string
           favorite?: boolean
           id?: string
@@ -108,6 +110,7 @@ export type Database = {
           variation_group?: string | null
         }
         Update: {
+          breakpoint?: string | null
           created_at?: string
           favorite?: boolean
           id?: string
