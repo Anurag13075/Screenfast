@@ -8,6 +8,7 @@ const links = [
   { label: "Styles", href: "/#styles" },
   { label: "Pricing", href: "/pricing" },
   { label: "FAQs", href: "/#faq" },
+   { label: "blogs", href: "/#blog" },
 ];
 
 export function Navbar({ onLight = false }: { onLight?: boolean }) {
