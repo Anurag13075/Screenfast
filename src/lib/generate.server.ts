@@ -87,6 +87,7 @@ type RawRow = {
   favorite?: boolean | null;
   parent_id?: string | null;
   variation_group?: string | null;
+  breakpoint?: string | null;
 };
 
 export async function signRows(rows: RawRow[]): Promise<GenerationRow[]> {
@@ -110,6 +111,7 @@ export async function signRows(rows: RawRow[]): Promise<GenerationRow[]> {
         favorite: Boolean(row.favorite),
         parentId: row.parent_id ?? null,
         variationGroup: row.variation_group ?? null,
+        breakpoint: (row.breakpoint as GenerationRow["breakpoint"]) ?? null,
         url,
       };
     }),
@@ -117,4 +119,4 @@ export async function signRows(rows: RawRow[]): Promise<GenerationRow[]> {
 }
 
 export const GENERATION_SELECT =
-  "id, prompt, mode, style, unlocked, created_at, image_url, favorite, parent_id, variation_group";
+  "id, prompt, mode, style, unlocked, created_at, image_url, favorite, parent_id, variation_group, breakpoint";
