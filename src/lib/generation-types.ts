@@ -8,5 +8,6 @@ export type GenerationRow = {
   favorite: boolean;
   parentId: string | null;
   variationGroup: string | null;
+  breakpoint: "mobile" | "tablet" | "desktop" | null;
   url: string | null;
 };
