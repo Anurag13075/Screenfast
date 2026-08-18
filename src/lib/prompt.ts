@@ -14,6 +14,24 @@ export function buildDesignPrompt(idea: string, mode: string, style: string): st
   return `Ultra high fidelity UI design mockup: ${brief}. Product idea: ${idea}. Visual style: ${style}. ${QUALITY}`;
 }
 
+const BREAKPOINT_BRIEF: Record<string, string> = {
+  mobile:
+    "the same screen adapted for a mobile phone: single column, stacked sections, bottom or hamburger navigation, large touch targets, shown inside a realistic modern phone frame with rounded corners and a status bar",
+  tablet:
+    "the same screen adapted for a tablet in portrait orientation: a two-column layout where it makes sense, a persistent side or top navigation, comfortably spaced touch targets, shown inside a realistic tablet device frame",
+  desktop:
+    "the same screen adapted for a desktop web browser: a wide layout with a persistent sidebar or top nav, multi-column content, hover-friendly controls, shown in a clean browser window with a sidebar, header and content area",
+};
+
+export function buildResponsivePrompt(
+  originalPrompt: string,
+  style: string,
+  breakpoint: "mobile" | "tablet" | "desktop",
+): string {
+  const brief = BREAKPOINT_BRIEF[breakpoint] ?? BREAKPOINT_BRIEF["mobile"];
+  return `Edit the attached UI design to create a responsive variant. Keep the exact same product, content, copy, colour tokens, type scale and visual style — only adapt the layout and framing for this breakpoint: ${brief}. Original design brief: ${originalPrompt}. Visual style: ${style}. ${QUALITY}`;
+}
+
 export function buildRefinePrompt(
   original: string,
   mode: string,
