@@ -1,7 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronRight, TrendingUp } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronRight,
+  Code2,
+  Download,
+  FileText,
+  Layers,
+  Smartphone,
+  Sparkles,
+  TrendingUp,
+  Wand2,
+} from "lucide-react";
 
 import demoPoster from "@/assets/demo-poster.jpg";
 import heroBg from "@/assets/hero-bg.jpg";
@@ -41,6 +52,45 @@ const STEPS = [
   { n: "01", title: "Describe your product", body: "One sentence is enough. Tell us what the app does and who it's for." },
   { n: "02", title: "Pick a look", body: "Minimal, brutalist, glassy, dark premium — choose the direction you want." },
   { n: "03", title: "Export and build", body: "Unlock full-resolution screens and hand them straight to your developers." },
+];
+
+const FEATURES = [
+  {
+    icon: Sparkles,
+    title: "Prompt-to-screens",
+    body: "Describe your product in one sentence, pick a visual style, and generate a coherent set of app or web screens.",
+  },
+  {
+    icon: Layers,
+    title: "Design systems",
+    body: "Get consistent colour tokens, type scales, buttons, inputs and cards generated across every screen you make.",
+  },
+  {
+    icon: Wand2,
+    title: "Refine flow",
+    body: "Iterate on any generated design with a follow-up instruction — no need to start over from scratch.",
+  },
+  {
+    icon: Smartphone,
+    title: "Responsive variants",
+    body: "Turn any screen into matching mobile, tablet and desktop versions — same content and style, adapted layout.",
+    isNew: true,
+  },
+  {
+    icon: Code2,
+    title: "Code export",
+    body: "Export generated designs as production-ready React or HTML components, not just flat images.",
+  },
+  {
+    icon: FileText,
+    title: "Handoff specs",
+    body: "Generate developer-ready documentation — layout structure, spacing scale, colour tokens and edge cases.",
+  },
+  {
+    icon: Download,
+    title: "Full-resolution export",
+    body: "Unlock and download production-ready assets at full resolution whenever you're ready to ship.",
+  },
 ];
 
 const FAQS = [
@@ -131,7 +181,7 @@ function Index() {
               }
             />
             <p className="mt-5 text-sm font-semibold text-white/70">
-              Plans from $9/mo · Cancel anytime
+              Plans from $4/mo · Cancel anytime
             </p>
           </motion.div>
         </div>
@@ -153,6 +203,34 @@ function Index() {
               }`}
             >
               <img src={src} alt={`Generated app screen ${i + 1}`} loading="lazy" className="w-full" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="features" className="mx-auto max-w-6xl px-5 py-24">
+        <p className="text-center text-sm font-extrabold uppercase tracking-[0.2em] text-primary">
+          Features
+        </p>
+        <h2 className="mx-auto mt-4 max-w-2xl text-center font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
+          Everything you need to go from idea to shipped
+        </h2>
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((feature) => (
+            <div
+              key={feature.title}
+              className="relative rounded-[26px] border border-border bg-card p-7 card-raised"
+            >
+              {feature.isNew ? (
+                <span className="absolute right-6 top-6 rounded-full bg-primary px-3 py-1 text-xs font-extrabold text-primary-foreground">
+                  New
+                </span>
+              ) : null}
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent text-primary">
+                <feature.icon className="h-5 w-5" strokeWidth={2.5} />
+              </span>
+              <h3 className="mt-5 text-lg font-extrabold">{feature.title}</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{feature.body}</p>
             </div>
           ))}
         </div>
