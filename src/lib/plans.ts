@@ -1,15 +1,15 @@
 export type PlanKey = "starter" | "growth" | "studio";
 
 export const PLAN_CREDITS: Record<PlanKey, number> = {
-  starter: 72,
-  growth: 288,
-  studio: 864,
+  starter: 36,
+  growth: 144,
+  studio: 240,
 };
 
 export const PLAN_PRICE: Record<PlanKey, number> = {
-  starter: 9,
-  growth: 29,
-  studio: 89,
+  starter: 4,
+  growth: 15,
+  studio: 25,
 };
 
 export const TOPUPS = [
@@ -23,3 +23,4 @@ export const UNLOCK_COST = 2;
 export const REFINE_COST = 1;
 export const CODE_EXPORT_COST = 2;
 export const HANDOFF_COST = 1;
+export const RESPONSIVE_SET_COST = 1;
