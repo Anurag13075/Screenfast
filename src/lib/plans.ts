@@ -7,9 +7,9 @@ export const PLAN_CREDITS: Record<PlanKey, number> = {
 };
 
 export const PLAN_PRICE: Record<PlanKey, number> = {
-  starter: 4,
-  growth: 15,
-  studio: 25,
+  starter: 9,
+  growth: 29,
+  studio: 89,
 };
 
 export const TOPUPS = [
