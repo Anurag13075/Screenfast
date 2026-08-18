@@ -15,7 +15,13 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { getAccount, generateDesign, listGenerations, unlockGeneration } from "@/lib/app.functions";
+import {
+  getAccount,
+  generateDesign,
+  generateResponsiveSet,
+  listGenerations,
+  unlockGeneration,
+} from "@/lib/app.functions";
 import {
   buildHandoff,
   deleteGeneration,
@@ -86,6 +92,7 @@ function CanvasWorkspace() {
   const generateFn = useServerFn(generateDesign);
   const unlockFn = useServerFn(unlockGeneration);
   const refineFn = useServerFn(refineDesign);
+  const responsiveFn = useServerFn(generateResponsiveSet);
   const codeFn = useServerFn(exportCode);
   const handoffFn = useServerFn(buildHandoff);
   const favoriteFn = useServerFn(toggleFavorite);
@@ -178,6 +185,24 @@ function CanvasWorkspace() {
       queryClient.invalidateQueries({ queryKey: ["generations"] });
       queryClient.invalidateQueries({ queryKey: ["account"] });
     },
+  });
+
+  const responsiveSet = useMutation({
+    mutationFn: (input: { id: string; breakpoints: ("mobile" | "tablet" | "desktop")[] }) =>
+      responsiveFn({ data: input }),
+    onSuccess: (result) => {
+      if (!result.ok) {
+        toast.error(
+          result.error === "not_enough_credits" ? "Out of credits" : "Responsive set failed",
+        );
+        return;
+      }
+      toast.success(`${result.generations.length} responsive variants placed on your canvas`);
+      setSelected(result.generations[0]?.id ?? null);
+      queryClient.invalidateQueries({ queryKey: ["generations"] });
+      queryClient.invalidateQueries({ queryKey: ["account"] });
+    },
+    onError: () => toast.error("Responsive set failed"),
   });
 
   const codeExport = useMutation({
@@ -587,6 +612,18 @@ function CanvasWorkspace() {
                       {refine.isPending ? "Editing…" : "AI edit in place"}
                     </button>
                   </div>
+                  <button
+                    onClick={() =>
+                      responsiveSet.mutate({
+                        id: selected,
+                        breakpoints: ["mobile", "tablet", "desktop"],
+                      })
+                    }
+                    disabled={responsiveSet.isPending}
+                    className="w-full rounded-full border border-border px-4 py-2 text-sm font-extrabold disabled:opacity-50"
+                  >
+                    {responsiveSet.isPending ? "Generating…" : "Generate responsive set (3 credits)"}
+                  </button>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => codeExport.mutate({ id: selected, target: "react" })}
