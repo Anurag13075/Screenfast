@@ -4,8 +4,15 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isUnlimited, UNLIMITED_CREDITS } from "@/lib/entitlements";
 import type { GenerationRow } from "@/lib/generation-types";
-import { CODE_EXPORT_COST, GENERATION_COST, HANDOFF_COST, REFINE_COST, UNLOCK_COST } from "@/lib/plans";
-import { buildDesignPrompt, buildRefinePrompt } from "@/lib/prompt";
+import {
+  CODE_EXPORT_COST,
+  GENERATION_COST,
+  HANDOFF_COST,
+  REFINE_COST,
+  RESPONSIVE_SET_COST,
+  UNLOCK_COST,
+} from "@/lib/plans";
+import { buildDesignPrompt, buildRefinePrompt, buildResponsivePrompt } from "@/lib/prompt";
 
 export type { GenerationRow };
 
@@ -460,6 +467,114 @@ export const generateStyleGrid = createServerFn({ method: "POST" })
             style,
             image_url: path,
             variation_group: group,
+            ...(unlimited ? { unlocked: true } : {}),
+          })
+          .select(GENERATION_SELECT)
+          .single();
+        if (insert.data) rows.push(insert.data);
+      }
+
+      if (rows.length === 0) return { ok: false, error: "storage_failed" };
+      return { ok: true, generations: await signRows(rows) };
+    },
+  );
+
+const responsiveSetSchema = z.object({
+  id: z.string().uuid(),
+  breakpoints: z.array(z.enum(["mobile", "tablet", "desktop"])).min(1).max(3),
+});
+
+export const generateResponsiveSet = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => responsiveSetSchema.parse(input))
+  .handler(
+    async ({
+      data,
+      context,
+    }): Promise<{ ok: true; generations: GenerationRow[] } | { ok: false; error: string }> => {
+      const unlimited = isUnlimited(context.claims);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { GENERATION_SELECT, renderImage, signRows, uploadDesign } = await import(
+        "@/lib/generate.server"
+      );
+
+      const parent = await context.supabase
+        .from("generations")
+        .select("id, prompt, mode, style, image_url")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (!parent.data?.image_url) return { ok: false, error: "not_found" };
+
+      const count = data.breakpoints.length;
+      if (!unlimited) {
+        const spend = await supabaseAdmin.rpc("spend_credits", {
+          _user_id: context.userId,
+          _amount: RESPONSIVE_SET_COST * count,
+          _reason: "responsive_set",
+          _reference: data.id,
+        });
+        if (spend.error) return { ok: false, error: "not_enough_credits" };
+      }
+
+      const download = await supabaseAdmin.storage.from("designs").download(parent.data.image_url);
+      let referenceUrl: string | undefined;
+      if (download.data) {
+        const buffer = new Uint8Array(await download.data.arrayBuffer());
+        let binary = "";
+        for (const byte of buffer) binary += String.fromCharCode(byte);
+        referenceUrl = `data:image/png;base64,${btoa(binary)}`;
+      }
+
+      const group = crypto.randomUUID();
+      const images = await Promise.all(
+        data.breakpoints.map((breakpoint) =>
+          renderImage(
+            buildResponsivePrompt(parent.data!.prompt, parent.data!.style, breakpoint),
+            referenceUrl,
+          ),
+        ),
+      );
+
+      const good = images
+        .map((b64, index) => ({ b64, breakpoint: data.breakpoints[index]! }))
+        .filter((row): row is { b64: string; breakpoint: (typeof data.breakpoints)[number] } =>
+          Boolean(row.b64),
+        );
+
+      if (good.length === 0) {
+        if (!unlimited) {
+          await supabaseAdmin.rpc("grant_credits", {
+            _user_id: context.userId,
+            _amount: RESPONSIVE_SET_COST * count,
+            _reason: "refund_failed_responsive_set",
+          });
+        }
+        return { ok: false, error: "generation_failed" };
+      }
+
+      if (!unlimited && good.length < count) {
+        await supabaseAdmin.rpc("grant_credits", {
+          _user_id: context.userId,
+          _amount: RESPONSIVE_SET_COST * (count - good.length),
+          _reason: "refund_partial_responsive_set",
+        });
+      }
+
+      const rows = [];
+      for (const { b64, breakpoint } of good) {
+        const path = await uploadDesign(context.userId, b64);
+        if (!path) continue;
+        const insert = await supabaseAdmin
+          .from("generations")
+          .insert({
+            user_id: context.userId,
+            prompt: parent.data.prompt,
+            mode: parent.data.mode,
+            style: parent.data.style,
+            image_url: path,
+            parent_id: parent.data.id,
+            variation_group: group,
+            breakpoint,
             ...(unlimited ? { unlocked: true } : {}),
           })
           .select(GENERATION_SELECT)
