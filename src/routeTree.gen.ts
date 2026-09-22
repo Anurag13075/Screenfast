@@ -10,16 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as RefundRouteImport } from './routes/refund'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
-import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
-import { Route as DashboardLibraryRouteImport } from './routes/dashboard.library'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
-import { Route as DashboardSupportRouteImport } from './routes/dashboard.support'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as ApiPublicPaddleWebhookRouteImport } from './routes/api/public/paddle-webhook'
 
 const IndexRoute = IndexRouteImport.update({
@@ -27,24 +21,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RefundRoute = RefundRouteImport.update({
-  id: '/refund',
-  path: '/refund',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -52,30 +36,10 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardBillingRoute = DashboardBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardLibraryRoute = DashboardLibraryRouteImport.update({
-  id: '/library',
-  path: '/library',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardSupportRoute = DashboardSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => DashboardRoute,
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPaddleWebhookRoute = ApiPublicPaddleWebhookRouteImport.update({
   id: '/api/public/paddle-webhook',
@@ -85,97 +49,62 @@ const ApiPublicPaddleWebhookRoute = ApiPublicPaddleWebhookRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRouteWithChildren
-  '/pricing': typeof PricingRoute
-  '/refund': typeof RefundRoute
+  '/about': typeof AboutRoute
+  '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/library': typeof DashboardLibraryRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/support': typeof DashboardSupportRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/api/public/paddle-webhook': typeof ApiPublicPaddleWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/pricing': typeof PricingRoute
-  '/refund': typeof RefundRoute
+  '/about': typeof AboutRoute
+  '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/library': typeof DashboardLibraryRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/support': typeof DashboardSupportRoute
-  '/dashboard': typeof DashboardIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/api/public/paddle-webhook': typeof ApiPublicPaddleWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRouteWithChildren
-  '/pricing': typeof PricingRoute
-  '/refund': typeof RefundRoute
+  '/about': typeof AboutRoute
+  '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/library': typeof DashboardLibraryRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/support': typeof DashboardSupportRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/api/public/paddle-webhook': typeof ApiPublicPaddleWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
-    | '/dashboard'
-    | '/pricing'
-    | '/refund'
+    | '/about'
+    | '/privacy'
     | '/terms'
-    | '/dashboard/billing'
-    | '/dashboard/library'
-    | '/dashboard/settings'
-    | '/dashboard/support'
-    | '/dashboard/'
+    | '/blog/$slug'
     | '/api/public/paddle-webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
-    | '/pricing'
-    | '/refund'
+    | '/about'
+    | '/privacy'
     | '/terms'
-    | '/dashboard/billing'
-    | '/dashboard/library'
-    | '/dashboard/settings'
-    | '/dashboard/support'
-    | '/dashboard'
+    | '/blog/$slug'
     | '/api/public/paddle-webhook'
   id:
     | '__root__'
     | '/'
-    | '/auth'
-    | '/dashboard'
-    | '/pricing'
-    | '/refund'
+    | '/about'
+    | '/privacy'
     | '/terms'
-    | '/dashboard/billing'
-    | '/dashboard/library'
-    | '/dashboard/settings'
-    | '/dashboard/support'
-    | '/dashboard/'
+    | '/blog/$slug'
     | '/api/public/paddle-webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
-  DashboardRoute: typeof DashboardRouteWithChildren
-  PricingRoute: typeof PricingRoute
-  RefundRoute: typeof RefundRoute
+  AboutRoute: typeof AboutRoute
+  PrivacyRoute: typeof PrivacyRoute
   TermsRoute: typeof TermsRoute
+  BlogSlugRoute: typeof BlogSlugRoute
   ApiPublicPaddleWebhookRoute: typeof ApiPublicPaddleWebhookRoute
 }
 
@@ -188,32 +117,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/refund': {
-      id: '/refund'
-      path: '/refund'
-      fullPath: '/refund'
-      preLoaderRoute: typeof RefundRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -223,40 +138,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/billing': {
-      id: '/dashboard/billing'
-      path: '/billing'
-      fullPath: '/dashboard/billing'
-      preLoaderRoute: typeof DashboardBillingRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/library': {
-      id: '/dashboard/library'
-      path: '/library'
-      fullPath: '/dashboard/library'
-      preLoaderRoute: typeof DashboardLibraryRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/support': {
-      id: '/dashboard/support'
-      path: '/support'
-      fullPath: '/dashboard/support'
-      preLoaderRoute: typeof DashboardSupportRouteImport
-      parentRoute: typeof DashboardRoute
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/paddle-webhook': {
       id: '/api/public/paddle-webhook'
@@ -268,33 +155,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface DashboardRouteChildren {
-  DashboardBillingRoute: typeof DashboardBillingRoute
-  DashboardLibraryRoute: typeof DashboardLibraryRoute
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardSupportRoute: typeof DashboardSupportRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
-}
-
-const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardBillingRoute: DashboardBillingRoute,
-  DashboardLibraryRoute: DashboardLibraryRoute,
-  DashboardSettingsRoute: DashboardSettingsRoute,
-  DashboardSupportRoute: DashboardSupportRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
-}
-
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
-  DashboardRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
-  DashboardRoute: DashboardRouteWithChildren,
-  PricingRoute: PricingRoute,
-  RefundRoute: RefundRoute,
+  AboutRoute: AboutRoute,
+  PrivacyRoute: PrivacyRoute,
   TermsRoute: TermsRoute,
+  BlogSlugRoute: BlogSlugRoute,
   ApiPublicPaddleWebhookRoute: ApiPublicPaddleWebhookRoute,
 }
 export const routeTree = rootRouteImport

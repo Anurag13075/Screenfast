@@ -78,22 +78,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Screenfast — AI app & web UI design generator" },
+      { title: "Personal Blog" },
       {
         name: "description",
         content:
-          "Describe your product and get production-ready mobile screens, web app UI and full design systems in minutes.",
+          "Thoughts on design, engineering, and product.",
       },
-      { name: "author", content: "Screenfast" },
-      { property: "og:title", content: "Screenfast — AI app & web UI design generator" },
+      { name: "author", content: "Author" },
+      { property: "og:title", content: "Personal Blog" },
       {
         property: "og:description",
         content:
-          "Describe your product and get production-ready mobile screens, web app UI and full design systems in minutes.",
+          "Thoughts on design, engineering, and product.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -105,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap",
       },
     ],
   }),
@@ -134,8 +133,28 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="min-h-screen flex flex-col max-w-4xl mx-auto px-6">
+        <header className="py-8 mb-8 border-b border-border/40 flex items-center justify-between">
+          <Link to="/" className="text-xl font-serif font-bold text-foreground">
+            Screenfast
+          </Link>
+          <nav className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <Link to="/" className="hover:text-foreground transition-colors [&.active]:text-foreground">Writing</Link>
+            <Link to="/about" className="hover:text-foreground transition-colors [&.active]:text-foreground">About</Link>
+          </nav>
+        </header>
+        <main className="flex-1">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </main>
+        <footer className="py-12 mt-20 border-t border-border/40 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+          <p>© {new Date().getFullYear()} Screenfast. All rights reserved.</p>
+          <nav className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+          </nav>
+        </footer>
+      </div>
       <Toaster position="top-center" />
     </QueryClientProvider>
   );
