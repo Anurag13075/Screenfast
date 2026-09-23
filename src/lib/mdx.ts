@@ -58,7 +58,10 @@ export const getPostBySlug = createServerFn({ method: "GET" })
       return null;
     }
 
-    const { data, content } = matter(source);
+    let { data, content } = matter(source);
+    
+    // Strip the leading H1 if it matches the title (to avoid duplication with the template header)
+    content = content.trimStart().replace(/^#\s+.*(\r?\n)+/, '');
     
     // Extract Headings for TOC
     const headings: TocItem[] = [];
