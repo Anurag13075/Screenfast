@@ -1,59 +1,163 @@
 ---
 title: "Automating Payment Recovery: Lessons from Stripe and Razorpay"
-date: "2024-05-10"
-description: "Implementing dunning management and smart retries to recover failed SaaS subscriptions before they churn."
+date: "2026-05-10"
+description: "Handling failed payments is one of the darkest corners of SaaS engineering. Here is our technical blueprint for building a resilient, automated payment recovery pipeline that saved us thousands in churned revenue."
 tags: ["engineering", "saas"]
-readingTime: "8 min read"
+readingTime: "11 min read"
 ---
 
 # Automating Payment Recovery: Lessons from Stripe and Razorpay
 
-In SaaS, involuntary churn is a silent killer. A customer loves your product, uses it daily, but their credit card expires, or their bank blocks a recurring transaction. Without a robust payment recovery system (often called "dunning"), you lose that customer forever.
+When you launch a SaaS product, you spend 99% of your time thinking about the "Happy Path": The user signs up, enters a valid credit card, you call the Stripe API, the payment succeeds, and the user gets access to the app. 
 
-After integrating deeply with Stripe and Razorpay for global billing, we learned that recovering failed payments is not just about sending an email; it's a complex state machine of webhooks, grace periods, and smart retries.
+But as your user base scales, the Happy Path becomes a statistical minority. Credit cards expire. Banks reject transactions due to automated fraud rules. 3D Secure (3DS) authentication flows fail. Indian RBI guidelines require extra mandates. Subscriptions that have run flawlessly for two years suddenly return `insufficient_funds`.
 
-## The Anatomy of a Failed Payment
+In our first year, involuntary churn—users losing access simply because their payment failed and we didn't handle it gracefully—accounted for almost 30% of our total churn. 
 
-When a recurring charge fails, the payment gateway triggers a webhook (e.g., `invoice.payment_failed` in Stripe). This is where your backend takes over. 
+Building an automated payment recovery (dunning) pipeline is not just a billing feature; it is a mission-critical distributed systems problem. In this post, I’ll outline the architecture we built to handle payment failures across Stripe and Razorpay, utilizing state machines, idempotent webhooks, and asynchronous retry queues.
 
-The naive approach is to immediately downgrade the user's account. **Do not do this.** 
+## 1. The Anatomy of a Payment Failure
 
-Instead, the failure should transition the subscription into a `past_due` state, triggering your dunning lifecycle.
+Payments do not fail uniformly. A failure can occur synchronously (while the user is staring at a loading spinner) or asynchronously (three days after a subscription renewal attempt). 
+
+Understanding the *reason* for the failure dictates the engineering response:
+- **Hard Declines:** Stolen card, closed account. You must immediately stop retrying and ask the user for a new payment method.
+- **Soft Declines:** Insufficient funds, temporary bank downtime. These are highly recoverable through automated retries.
+- **Authentication Required:** Strong Customer Authentication (SCA) in Europe or RBI mandate approvals in India. The payment requires the user to come back online and complete a 3D Secure challenge.
+
+## 2. Webhooks are Your Source of Truth
+
+Do not rely on the API response from your initial `createCharge` or `createSubscription` call as the final state of the payment. The only reliable way to know if a payment succeeded or failed is by listening to webhooks.
+
+Both Stripe (`invoice.payment_failed`, `charge.failed`) and Razorpay (`payment.failed`, `subscription.charged`) send asynchronous webhooks.
+
+However, webhooks present two major distributed systems challenges:
+1. **Out of order delivery:** You might receive a `payment_failed` webhook *before* you receive the `invoice_created` webhook.
+2. **Duplicate delivery:** Stripe guarantees "at least once" delivery. You *will* receive the same webhook twice.
+
+### Idempotency and Database Locking
+
+To handle duplicates and race conditions, every webhook handler must be strictly idempotent. 
+
+We achieved this by storing every processed Webhook Event ID in a dedicated Postgres table. Before processing a payload, we attempt to insert the Event ID. If a unique constraint violation occurs, we safely ignore the webhook.
 
 ```typescript
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const subscription = await db.subscriptions.findById(invoice.subscription);
-  
-  if (subscription.status === 'active') {
-    await db.subscriptions.update(subscription.id, { 
-      status: 'past_due',
-      dunning_step: 1,
-      grace_period_ends_at: addDays(new Date(), 14)
-    });
+async function handleStripeWebhook(event: Stripe.Event) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
     
-    await emailService.sendCardUpdateReminder(subscription.userId);
+    // 1. Idempotency Check
+    const { rowCount } = await client.query(
+      `INSERT INTO processed_webhooks (event_id, provider) 
+       VALUES ($1, 'stripe') ON CONFLICT DO NOTHING`,
+      [event.id]
+    );
+    
+    if (rowCount === 0) {
+      console.log(`Webhook ${event.id} already processed. Skipping.`);
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    // 2. Lock the Invoice record to prevent race conditions
+    // 'FOR UPDATE' ensures no other process can modify this invoice concurrently
+    const invoiceId = event.data.object.id;
+    const { rows } = await client.query(
+      `SELECT * FROM invoices WHERE stripe_invoice_id = $1 FOR UPDATE`,
+      [invoiceId]
+    );
+    
+    const invoice = rows[0];
+    
+    // 3. Process the state transition
+    await processPaymentFailedState(invoice, event.data.object);
+    
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
 }
 ```
 
-## Smart Retries vs. Dumb Retries
+The `SELECT ... FOR UPDATE` row-level lock is critical. If a user manually pays the invoice via the dashboard at the exact same millisecond the automated webhook arrives, the lock forces one transaction to wait, ensuring our state machine doesn't diverge.
 
-Both Stripe and Razorpay offer automatic retries, but relying solely on them leaves money on the table. Gateways often retry on a fixed schedule (e.g., Day 3, Day 5, Day 7). 
+## 3. The State Machine of an Invoice
 
-A "Smart Retry" engine uses machine learning to retry the charge at the optimal time. For example, if the card was declined due to insufficient funds, the best time to retry might be the 1st or 15th of the month when payroll typically clears. If it was a network error, retrying 12 hours later might work.
+An invoice shouldn't just be a boolean `paid: true | false`. It represents a workflow. We implemented an XState-inspired state machine in our backend to model the lifecycle of a bill.
 
-While Stripe provides Smart Retries out of the box (if enabled), you must ensure your application logic respects this schedule. Do not prematurely cancel the subscription while the gateway is still attempting to recover the funds.
+Our states: `DRAFT` -> `OPEN` -> `PROCESSING` -> `REQUIRES_ACTION` -> `PAID` | `UNCOLLECTIBLE`.
 
-## Grace Periods and Product Friction
+When an `invoice.payment_failed` webhook hits, we transition the state based on the error code. 
 
-During the `past_due` phase, how should the product behave? 
+If it's a soft decline (e.g., insufficient funds), we leave the invoice `OPEN` and schedule a retry.
 
-We employ a escalating friction model:
-1. **Days 1-3 (Soft Warning):** A small, non-intrusive banner appears in the app. "Your last payment failed. Please update your card."
-2. **Days 4-10 (Hard Warning):** A modal blocks the UI on login, forcing the user to acknowledge the failed payment before proceeding.
-3. **Days 11-14 (Restricted Mode):** Core functionality is disabled, but the user can still access their data and the billing page.
-4. **Day 15 (Cancellation):** The subscription is marked `canceled` and the webhook fires to finalize the teardown.
+## 4. Smart Retries and Exponential Backoff
+
+Stripe's built-in "Smart Retries" are great, but relying solely on them means your backend is blind to the schedule. We decided to control the retry schedule on our side to synchronize it with our email system and app UI.
+
+You shouldn't retry every hour. Banks employ fraud detection algorithms that will permanently blacklist a card if they see rapid, repeated failed attempts.
+
+We built a worker queue (using Redis and BullMQ) that implements exponential backoff with jitter:
+- Attempt 1: 1 day later
+- Attempt 2: 3 days later
+- Attempt 3: 7 days later
+
+```typescript
+// Enqueueing a retry with BullMQ
+async function schedulePaymentRetry(invoiceId: string, attemptCount: number) {
+  // Max 3 retries
+  if (attemptCount >= 3) {
+    await markInvoiceUncollectible(invoiceId);
+    return;
+  }
+
+  // Calculate delay: e.g., 1 day, 3 days, 7 days
+  const delays = [24 * 60 * 60 * 1000, 3 * 24 * 60 * 60 * 1000, 7 * 24 * 60 * 60 * 1000];
+  const delay = delays[attemptCount];
+
+  // Add random jitter (± 2 hours) to prevent thundering herd if batching
+  const jitter = (Math.random() - 0.5) * 2 * 60 * 60 * 1000;
+
+  await paymentRetryQueue.add(
+    'retry-capture',
+    { invoiceId, attemptCount: attemptCount + 1 },
+    { delay: delay + jitter }
+  );
+}
+```
+
+## 5. Navigating SCA and RBI Regulations (The "Requires Action" Flow)
+
+The hardest technical challenge we faced was handling regional regulations, specifically European SCA (3D Secure) and Indian RBI recurring payment mandates (via Razorpay).
+
+In these scenarios, the payment doesn't strictly "fail"—it enters a `REQUIRES_ACTION` state. The bank is saying, "I have the funds, but the user must open their banking app and authorize this."
+
+Your automated backend cannot solve this. You must bring the user back into the loop.
+
+When our webhook handler identifies an SCA failure, it triggers a multi-channel dunning workflow:
+1. **Email:** "Action required to keep your subscription active." (Contains a unique, securely signed link to a Stripe Hosted Invoice page or Razorpay payment link).
+2. **In-App Banner:** We push a WebSocket message to the client. If the user is currently using the app, a banner immediately drops down: "Your last payment requires authentication."
+3. **Grace Period:** We don't instantly cut off access. We grant a 5-day grace period, stored in the database as `access_revoked_at`.
+
+```typescript
+// Updating the user's access profile
+await client.query(
+  `UPDATE subscriptions 
+   SET status = 'past_due', 
+       grace_period_ends_at = NOW() + INTERVAL '5 days'
+   WHERE id = $1`,
+  [subscriptionId]
+);
+```
+
+During this grace period, API requests to our core services are checked against the `grace_period_ends_at` timestamp. If they pass the date without completing the 3DS challenge, the system automatically transitions their account to read-only mode.
 
 ## Conclusion
 
-Automating payment recovery is one of the highest-ROI engineering tasks you can take on. By effectively utilizing webhooks, respecting gateway retry schedules, and carefully designing your app's grace period experience, you can easily recover 30-40% of failed payments, directly impacting your bottom line.
+Building a custom payment recovery engine is tedious, unglamorous work. It involves wrestling with obscure bank error codes, edge-case webhook timing, and strict regional regulations. 
+
+However, by treating payment failures as a first-class engineering problem rather than an afterthought, you plug a massive leak in your revenue bucket. A robust dunning pipeline, backed by idempotent webhooks and smart retries, operates silently in the background, recovering thousands of dollars while you focus on building your product.

@@ -1,67 +1,144 @@
 ---
 title: "Why I Stopped Using Redux for Complex UI State"
-date: "2024-05-05"
-description: "How migrating from Redux to atomic state management simplified our frontend architecture and eliminated unnecessary re-renders."
+date: "2026-05-05"
+description: "Redux is great, but when building high-frequency, complex UI applications like infinite canvases or game-like interfaces, the global immutable store becomes a bottleneck. Here is why we moved away from it."
 tags: ["engineering", "saas"]
-readingTime: "8 min read"
+readingTime: "10 min read"
 ---
 
 # Why I Stopped Using Redux for Complex UI State
 
-For years, Redux was the default choice for React state management. It provided a single source of truth, predictable state updates via reducers, and fantastic developer tools. But as our application—a heavily interactive, canvas-based design tool—grew, Redux became our biggest bottleneck. 
+For years, Redux was my default answer to state management in React. It provided a predictable state container, a crystal-clear debugging experience via the Redux DevTools, and a rigid, unyielding structure that kept spaghetti code at bay. If you asked me in 2020 how to build a complex web app, I would have handed you a Redux boilerplate without a second thought.
 
-Here is why we tore out Redux and replaced it with a combination of Zustand and Jotai, and why you might want to consider doing the same.
+But in late 2024, while building the core engine for our infinite canvas application, Redux almost brought our product to its knees. 
 
-## The Problem with the Global Store
+This post isn't a "Redux is dead" hit piece. Redux is still a fantastic tool for managing coarse-grained, global application state (like user authentication, routing, and high-level preferences). However, for high-frequency, fine-grained, transient UI state—the kind you find in canvas apps, video editors, or complex drag-and-drop interfaces—a single, global immutable store is fundamentally the wrong architectural pattern.
 
-Redux relies on a monolithic global state object. When you connect a component to the store, you use a selector to extract the slice of state you care about.
+Here is the story of how we realized Redux was failing us, and how we eventually solved our state management crisis using atomic state and signals.
+
+## The Problem: High-Frequency Transient State
+
+Imagine a user dragging a rectangle across a canvas. In a smooth application, this action fires `mousemove` events at 60 (or 120) times per second. 
+
+If you store the rectangle's coordinates `(x, y)` in a Redux store, every single pixel of mouse movement triggers an action dispatch:
 
 ```javascript
-const selectedNodeId = useSelector(state => state.canvas.selectedNodeId);
+// The Redux Way: Dispatching an action for every mouse move
+function handleMouseMove(e) {
+  dispatch({
+    type: 'NODE_MOVED',
+    payload: { id: selectedNodeId, x: e.clientX, y: e.clientY }
+  });
+}
 ```
 
-Under the hood, whenever *any* action is dispatched and the state object updates, Redux must run *all* selectors across the entire application to check if their specific slice changed. In a complex UI with hundreds of connected components (layers panel, property inspectors, canvas nodes), this selector evaluation becomes a severe performance tax.
+What happens under the hood when this action is dispatched?
+1. The action hits the root reducer.
+2. The root reducer calls every slice reducer.
+3. A new immutable state tree is allocated and created. (Even if only deeply nested `x` and `y` properties changed, all their parent objects must be shallow-copied to maintain immutability).
+4. Redux notifies all connected React components that the state has updated.
+5. React components map the state, run equality checks (`useSelector`), and decide if they need to re-render.
 
-We spent weeks optimizing `reselect` memoization, carefully structuring our store, and profiling renders. But we were fighting the architecture.
+Doing this 60 times a second for a large state tree creates massive garbage collection pressure and eats up the CPU budget you desperately need for rendering. We started noticing severe micro-stutters. The React Profiler looked like a horror movie—a massive wall of red cascading updates.
 
-## Atomic State with Jotai
+## Attempt 1: Throttling and Debouncing
 
-We realized that our UI state wasn't truly a monolith; it was a highly fragmented graph of independent values. 
+Our first instinct was to fight the symptoms. We throttled the Redux dispatches so they only happened every 16ms (roughly one frame). This barely helped. 
 
-Enter atomic state management (like Recoil or Jotai). Instead of a single store, you define "atoms" of state. Components subscribe directly to the atoms they need.
+Next, we tried debouncing the store updates entirely. We kept the drag state in a local React `useState` while the drag was happening, and only dispatched the final `NODE_MOVED` action to Redux on `mouseup`.
+
+```javascript
+// A hacky compromise
+const [localPos, setLocalPos] = useState({ x: initialX, y: initialY });
+
+function handleMouseMove(e) {
+  // Update local state for immediate visual feedback (fast)
+  setLocalPos({ x: e.clientX, y: e.clientY });
+}
+
+function handleMouseUp() {
+  // Sync back to Redux only at the end (slow, but infrequent)
+  dispatch({ type: 'NODE_MOVED', payload: { id, ...localPos } });
+}
+```
+
+This solved the performance issue for a single dragging element, but it destroyed the architectural purity we adopted Redux for in the first place. 
+
+What if another component needed to know the node's position *while* it was dragging? (For example, aligning snapping guides or updating a real-time coordinates panel). Because the state was temporarily hidden inside a local React component, those other components were completely blind to it. We ended up passing props through five layers of components just to share this "local" state. It was a mess.
+
+## The Core Mismatch: Top-Down vs. Bottom-Up
+
+Redux enforces a **top-down** data flow. State lives at the very top of the tree, and changes trickle down through selectors. 
+
+But highly interactive UIs often require **bottom-up** or **peer-to-peer** data flows. A node on a canvas doesn't care about the state of the entire document; it just cares about its own `x` and `y`. A properties panel just cares about the `color` of the currently selected node. 
+
+Forcing all these micro-updates to travel all the way up to the global store and back down again is like routing all local city traffic through the national highway system. 
+
+## The Solution: Atomic State (Jotai) and Signals
+
+We realized we needed a state management system that allowed for fine-grained subscriptions. When Node A's X-coordinate changes, only Node A's React component should re-render. The root component, the sidebar, and Node B shouldn't even know the change occurred.
+
+We migrated to **Jotai**, an atomic state management library (similar to Recoil). 
+
+In Jotai, state is broken down into tiny, independent pieces called "atoms". 
 
 ```javascript
 import { atom, useAtom } from 'jotai';
 
-export const selectedNodeIdAtom = atom(null);
+// Instead of a giant node tree, each property can be its own atom
+const nodeXAtom = atom(100);
+const nodeYAtom = atom(200);
 
-function PropertiesPanel() {
-  const [nodeId] = useAtom(selectedNodeIdAtom);
-  // Only re-renders when selectedNodeIdAtom specifically changes
+function CanvasNode() {
+  // This component ONLY subscribes to nodeX and nodeY.
+  // It will not re-render if nodeColor changes!
+  const [x, setX] = useAtom(nodeXAtom);
+  const [y, setY] = useAtom(nodeYAtom);
+  
+  return (
+    <div style={{ transform: `translate(${x}px, ${y}px)` }} />
+  );
 }
 ```
 
-This dependency graph is resolved at the component level. If `nodeId` changes, only the components explicitly subscribed to that atom are notified. There is no global selector evaluation phase. Our rendering bottlenecks vanished overnight.
+This immediately solved our performance issues. Because atoms exist outside the React tree but components can subscribe to them directly, we had the best of both worlds: global accessibility without global re-renders. 
 
-## Zustand for Application Logic
+### Enter Signals
 
-While Jotai is brilliant for UI state (like dropdowns, selection states, and transient input), we still needed something for our core business logic—handling websocket connections, syncing documents, and managing offline queues.
+As our requirements grew more extreme (moving to WebGL), even React's render cycle became a bottleneck. We started bypassing React entirely for certain high-frequency updates, adopting the **Signals** pattern (popularized by SolidJS and Preact).
 
-For this, we chose Zustand. It provides the predictability of Redux but without the boilerplate of actions, types, and reducers.
+Signals allow you to bind a reactive state directly to a DOM node or a canvas render function, completely sidestepping React's Virtual DOM diffing.
 
 ```javascript
-import create from 'zustand';
+import { signal, effect } from '@preact/signals-react';
 
-const useDocumentStore = create((set, get) => ({
-  document: null,
-  isSyncing: false,
-  updateNode: (id, payload) => {
-    set(state => /* immutable update logic */);
-    syncService.pushUpdate(id, payload);
-  }
-}));
+const nodeX = signal(100);
+
+// In our WebGL render loop, we just read the signal directly.
+// No React components are involved in this hot path.
+function renderLoop() {
+  mesh.position.x = nodeX.value;
+  renderer.render(scene, camera);
+  requestAnimationFrame(renderLoop);
+}
+
+// When the mouse moves, we update the signal.
+// This is practically zero-cost.
+function handleMouseMove(e) {
+  nodeX.value = e.clientX; 
+}
 ```
 
-## The Verdict
+## The Mental Shift
 
-Redux taught the React ecosystem invaluable lessons about immutability and predictable state updates. But the tools have evolved. By separating transient UI state (Jotai) from core application state (Zustand), we cut our boilerplate in half, improved performance by orders of magnitude, and made our codebase significantly easier to onboard new engineers into.
+Moving away from Redux required a significant shift in how our team thought about state. We had to categorize our state into three distinct buckets:
+
+1. **Global/Persistent State:** (User profile, billing status, document metadata). This still lives in a traditional store (we use Zustand now, for its simplicity).
+2. **Transient UI State:** (Selection state, drag coordinates, hover states, scroll positions). This lives in Jotai atoms or local component state. It is highly volatile and updates 60fps.
+3. **Derived/Computed State:** (Bounding boxes of groups, collision detection results). We rely heavily on memoized selectors and derived atoms to compute these only when their specific dependencies change.
+
+## Conclusion
+
+Redux is an architectural marvel for the problems it was designed to solve. But the web has evolved. We are now building applications in the browser that rival desktop software in complexity and interactivity. 
+
+If you are building an application where the user is constantly manipulating the UI, dragging elements, scrubbing timelines, or painting on a canvas, do not default to a single global immutable store. Look into atomic state management (Jotai, Recoil) or Signals. Your CPU (and your users) will thank you.
