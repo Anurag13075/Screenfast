@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { getPosts, type PostMeta } from '../lib/mdx';
+import { NewsletterForm } from '@/components/NewsletterForm';
 
 export const Route = createFileRoute('/')({
   component: Index,
@@ -35,20 +36,7 @@ function Index() {
             I'm Anurag Sharma. I engineer local-first web applications, infinite canvases, and automated systems. This is my notebook on architecture, interface design, and scaling solo products.
           </p>
           
-          <form className="flex flex-col sm:flex-row gap-4 max-w-lg items-start sm:items-center p-2 rounded-sm border border-border bg-background shadow-sm hover:border-accent/40 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent transition-all duration-300" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="anuragf863@gmail.com"
-              className="flex-1 bg-transparent py-3 px-4 focus:outline-none text-foreground placeholder:text-muted-foreground w-full sm:w-auto"
-              required
-            />
-            <button 
-              type="submit" 
-              className="font-medium text-sm bg-foreground text-background hover:bg-accent transition-colors py-3 px-6 rounded-sm w-full sm:w-auto shrink-0"
-            >
-              Join Newsletter
-            </button>
-          </form>
+          <NewsletterForm />
         </div>
       </section>
 

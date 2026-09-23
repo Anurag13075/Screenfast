@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { ArrowRight, Check, Copy } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { HighlightShare } from '@/components/HighlightShare';
+import { NewsletterForm } from '@/components/NewsletterForm';
 
 export const Route = createFileRoute('/blog/$slug')({
   component: BlogPost,
@@ -217,16 +218,10 @@ function BlogPost() {
                 <p className="text-muted-foreground text-sm mb-6">
                   Occasional essays on engineering, design, and building resilient systems. No spam.
                 </p>
-                <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-                  <input 
-                    type="email" 
-                    placeholder="anuragf863@gmail.com" 
-                    className="flex-1 bg-background border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent transition-colors"
-                  />
-                  <button type="submit" className="bg-foreground text-background px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity">
-                    Subscribe
-                  </button>
-                </form>
+                <NewsletterForm 
+                  buttonText="Subscribe"
+                  expandedClassName="flex flex-col sm:flex-row gap-2 w-full items-start sm:items-center"
+                />
               </div>
             </div>
           </div>
