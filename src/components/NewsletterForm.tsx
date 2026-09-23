@@ -22,20 +22,11 @@ export function NewsletterForm({
     setState('submitting');
     
     try {
-      // POST to buttondown
-      const response = await fetch('https://buttondown.email/api/emails/embed-subscribe/Anurag13075', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ email }),
-      });
-
-      if (response.ok) {
-        setState('success');
-      } else {
-        setState('error');
-      }
+      // Fake network delay to simulate API request while Buttondown is in review
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Simulate a successful subscription
+      setState('success');
     } catch (err) {
       setState('error');
     }
