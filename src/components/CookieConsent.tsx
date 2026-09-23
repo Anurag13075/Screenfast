@@ -26,7 +26,7 @@ export function CookieConsent() {
       <div className="bg-background border border-border p-4 shadow-sm flex flex-col gap-3 max-w-sm rounded-sm">
         <div className="flex items-start justify-between gap-4">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            We use cookies to ensure you get the best experience and to serve relevant ads via Google AdSense. 
+           We use cookies to ensure you get the best experience. Once ads are enabled on this site, we'll also use cookies to serve relevant advertising via Google AdSense.
             <Link to="/privacy" className="text-foreground underline underline-offset-4 decoration-border ml-1 hover:decoration-accent transition-colors">
               Learn more
             </Link>
