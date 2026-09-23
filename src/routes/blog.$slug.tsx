@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowRight, Check, Copy } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { AdSlot } from '@/components/AdSlot';
 import { HighlightShare } from '@/components/HighlightShare';
 
 export const Route = createFileRoute('/blog/$slug')({
@@ -211,8 +210,6 @@ function BlogPost() {
             </ReactMarkdown>
           </div>
 
-          <AdSlot format="horizontal" />
-
           <div className="mt-24 pt-12 border-t border-border">
             <div className="flex flex-col md:flex-row gap-8 items-start justify-between">
               <div className="max-w-md">
@@ -281,9 +278,6 @@ function BlogPost() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-12">
-                <AdSlot format="square" className="w-[250px] mx-0" />
-              </div>
             </div>
           )}
         </div>
