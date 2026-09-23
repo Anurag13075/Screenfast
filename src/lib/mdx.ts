@@ -11,21 +11,26 @@ export type PostMeta = {
   coverImage?: string;
 };
 
+export type TocItem = {
+  depth: number;
+  text: string;
+  id: string;
+};
+
 export type Post = {
   meta: PostMeta;
   content: string;
+  headings: TocItem[];
+  nextPost: PostMeta | null;
 };
 
-// Use Vite's import.meta.glob to eagerly load all markdown files in the content directory as strings
 const postsModules = import.meta.glob('../../content/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
-export const getPosts = createServerFn({ method: "GET" }).handler(async () => {
+function getAllPostsSync(): PostMeta[] {
   const posts = Object.entries(postsModules).map(([filePath, source]) => {
     const fileName = filePath.split('/').pop() || '';
     const slug = fileName.replace(/\.mdx?$/, '');
-    
     const { data } = matter(source);
-
     return {
       slug,
       title: data.title || 'Untitled',
@@ -36,8 +41,11 @@ export const getPosts = createServerFn({ method: "GET" }).handler(async () => {
       coverImage: data.coverImage,
     };
   });
-
   return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+export const getPosts = createServerFn({ method: "GET" }).handler(async () => {
+  return getAllPostsSync();
 });
 
 export const getPostBySlug = createServerFn({ method: "GET" })
@@ -51,6 +59,22 @@ export const getPostBySlug = createServerFn({ method: "GET" })
     }
 
     const { data, content } = matter(source);
+    
+    // Extract Headings for TOC
+    const headings: TocItem[] = [];
+    const headingRegex = /(?:^|\n)(#{2,3})\s+(.*)/g;
+    let match;
+    while ((match = headingRegex.exec(content)) !== null) {
+      const depth = match[1].length;
+      const text = match[2].replace(/\[|\]|\(.*?\)/g, '').replace(/`/g, '').trim();
+      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      headings.push({ depth, text, id });
+    }
+
+    // Find Next Post
+    const allPosts = getAllPostsSync();
+    const currentIndex = allPosts.findIndex(p => p.slug === slug);
+    const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : (allPosts.length > currentIndex + 1 ? allPosts[currentIndex + 1] : null);
 
     return {
       meta: {
@@ -63,5 +87,7 @@ export const getPostBySlug = createServerFn({ method: "GET" })
         coverImage: data.coverImage,
       },
       content,
+      headings,
+      nextPost
     };
   });

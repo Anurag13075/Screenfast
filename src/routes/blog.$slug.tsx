@@ -2,7 +2,8 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { getPostBySlug } from '../lib/mdx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ArrowLeft, Clock, Calendar, Hash } from 'lucide-react';
+import { ArrowRight, Check, Copy } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export const Route = createFileRoute('/blog/$slug')({
   component: BlogPost,
@@ -23,94 +24,233 @@ export const Route = createFileRoute('/blog/$slug')({
   }),
 });
 
-function BlogPost() {
-  const { post } = Route.useLoaderData();
+function ProgressBar() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const updateProgress = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollHeight > 0) {
+        const scrolled = (window.scrollY / scrollHeight) * 100;
+        setProgress(Math.min(100, Math.max(0, scrolled)));
+      }
+    };
+    window.addEventListener('scroll', updateProgress);
+    updateProgress();
+    return () => window.removeEventListener('scroll', updateProgress);
+  }, []);
 
   return (
-    <article className="mx-auto w-full max-w-[65ch] py-8 lg:py-16 animate-hero">
-      <Link 
-        to="/" 
-        className="inline-block text-sm text-muted-foreground hover:text-foreground transition-colors mb-12 font-medium"
-      >
-        Index
-      </Link>
+    <div className="fixed top-0 left-0 w-full h-[2px] z-50 bg-transparent">
+      <div 
+        className="h-full bg-accent transition-all duration-150 ease-out"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
+}
 
-      <header className="mb-16">
-        <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-serif font-medium tracking-tight leading-[1.05] mb-8 text-balance text-foreground">
-          {post.meta.title}
-        </h1>
+function CopyCodeButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute top-3 right-3 p-1.5 rounded-sm bg-foreground/10 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+      aria-label="Copy code"
+    >
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+    </button>
+  );
+}
+
+function BlogPost() {
+  const { post } = Route.useLoaderData();
+  const [activeId, setActiveId] = useState<string>('');
+
+  // Intersection observer for ToC highlighting
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '0px 0px -80% 0px' }
+    );
+
+    const headings = document.querySelectorAll('h2, h3');
+    headings.forEach((heading) => observer.observe(heading));
+
+    return () => headings.forEach((heading) => observer.unobserve(heading));
+  }, [post.content]);
+
+  return (
+    <>
+      <ProgressBar />
+      
+      <div className="mx-auto w-full max-w-7xl relative grid grid-cols-1 lg:grid-cols-[1fr_minmax(auto,65ch)_1fr] gap-12 py-8 lg:py-16 animate-hero">
         
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground font-mono">
-          <div className="flex items-center gap-3">
-            <div className="h-6 w-6 rounded-sm bg-muted overflow-hidden border border-border">
-              <img 
-                src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNGQkZBRjgiLz48Y2lyY2xlIGN4PSI1MCUiIGN5PSI0NSUiIHI9IjI1JSIgZmlsbD0iI0U0RTJERCIvPjxjaXJjbGUgY3g9IjUwJSIgY3k9IjExMCUiIHI9IjQ1JSIgZmlsbD0iI0U0RTJERCIvPjwvc3ZnPg==" 
-                alt="Anurag Sharma" 
-                className="w-full h-full object-cover grayscale"
-              />
+        {/* Left padding / Back Link on Desktop */}
+        <div className="hidden lg:flex flex-col items-end pt-2 text-sm">
+          <Link 
+            to="/" 
+            className="text-muted-foreground hover:text-foreground transition-colors font-medium sticky top-24"
+          >
+            Index
+          </Link>
+        </div>
+
+        {/* Main Content */}
+        <article className="w-full">
+          {/* Mobile Back Link */}
+          <Link 
+            to="/" 
+            className="lg:hidden inline-block text-sm text-muted-foreground hover:text-foreground transition-colors mb-12 font-medium"
+          >
+            Index
+          </Link>
+
+          <header className="mb-16">
+            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-serif font-medium tracking-tight leading-[1.05] mb-8 text-balance text-foreground">
+              {post.meta.title}
+            </h1>
+            
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted-foreground font-mono">
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 rounded-sm bg-muted overflow-hidden border border-border">
+                  <img 
+                    src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNGQkZBRjgiLz48Y2lyY2xlIGN4PSI1MCUiIGN5PSI0NSUiIHI9IjI1JSIgZmlsbD0iI0U0RTJERCIvPjxjaXJjbGUgY3g9IjUwJSIgY3k9IjExMCUiIHI9IjQ1JSIgZmlsbD0iI0U0RTJERCIvPjwvc3ZnPg==" 
+                    alt="Anurag Sharma" 
+                    className="w-full h-full object-cover grayscale"
+                  />
+                </div>
+                <span className="font-medium text-foreground font-sans">Anurag Sharma</span>
+              </div>
+              <time dateTime={post.meta.date}>
+                {new Date(post.meta.date).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </time>
+              <span>{post.meta.readingTime}</span>
             </div>
-            <span className="font-medium text-foreground font-sans">Anurag Sharma</span>
-          </div>
-          <time dateTime={post.meta.date}>
-            {new Date(post.meta.date).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </time>
-          <span>{post.meta.readingTime}</span>
-        </div>
-      </header>
+          </header>
 
-      {post.meta.coverImage && (
-        <figure className="mb-16 overflow-hidden bg-muted border border-border aspect-[2/1] w-full">
-          <img 
-            src={post.meta.coverImage} 
-            alt={`Cover image for ${post.meta.title}`}
-            className="w-full h-full object-cover" 
-          />
-        </figure>
-      )}
-
-      <div className="prose-custom">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {post.content}
-        </ReactMarkdown>
-      </div>
-
-      <footer className="mt-24 pt-8 border-t border-border">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground font-mono mb-12">
-          <span>Tags:</span>
-          <div className="flex gap-2">
-            {post.meta.tags?.map((tag) => (
-              <span key={tag} className="px-2 py-0.5 bg-muted text-foreground border border-border">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-        
-        <div className="p-8 border border-border bg-background flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
-          <div>
-            <h3 className="font-serif text-2xl font-medium mb-2 text-foreground tracking-tight">Stay updated</h3>
-            <p className="text-muted-foreground text-sm max-w-[35ch]">Join the newsletter for occasional thoughts on engineering and design.</p>
-          </div>
-          <form className="flex w-full sm:w-auto" onSubmit={(e) => e.preventDefault()}>
-            <input 
-              type="email" 
-              placeholder="anuragf863@gmail.com"
-              className="bg-transparent border-b border-border py-2 px-1 focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground/50 w-full sm:w-48 text-sm"
-              required
-            />
-            <button 
-              type="submit" 
-              className="font-medium text-sm text-accent hover:text-foreground transition-colors py-2 px-4 shrink-0"
+          <div className="prose-custom">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h2: ({ node, children, ...props }) => {
+                  const id = children?.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                  return <h2 id={id} {...props}>{children}</h2>;
+                },
+                h3: ({ node, children, ...props }) => {
+                  const id = children?.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                  return <h3 id={id} {...props}>{children}</h3>;
+                },
+                code: ({ node, inline, className, children, ...props }: any) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const codeString = String(children).replace(/\n$/, '');
+                  if (!inline && match) {
+                    return (
+                      <div className="relative group">
+                        <CopyCodeButton text={codeString} />
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </div>
+                    );
+                  }
+                  return <code className={className} {...props}>{children}</code>;
+                }
+              }}
             >
-              Subscribe
-            </button>
-          </form>
+              {post.content}
+            </ReactMarkdown>
+          </div>
+
+          <div className="mt-24 pt-12 border-t border-border">
+            <div className="flex flex-col md:flex-row gap-8 items-start justify-between">
+              <div className="max-w-md">
+                <h3 className="font-serif text-2xl font-medium text-foreground mb-3">Newsletter</h3>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Occasional essays on engineering, design, and building resilient systems. No spam.
+                </p>
+                <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
+                  <input 
+                    type="email" 
+                    placeholder="anuragf863@gmail.com" 
+                    className="flex-1 bg-background border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent transition-colors"
+                  />
+                  <button type="submit" className="bg-foreground text-background px-4 py-2 rounded-sm text-sm font-medium hover:opacity-90 transition-opacity">
+                    Subscribe
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          
+          {/* Read Next */}
+          {post.nextPost && (
+            <div className="mt-16 pt-12 border-t border-border">
+              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground block mb-6">
+                Read Next
+              </span>
+              <Link 
+                to={`/blog/${post.nextPost.slug}`}
+                className="group block border border-border bg-muted/30 hover:bg-muted p-8 rounded-sm transition-colors"
+              >
+                <h3 className="font-serif text-2xl text-foreground mb-3 group-hover:text-accent transition-colors">
+                  {post.nextPost.title}
+                </h3>
+                <p className="text-muted-foreground">
+                  {post.nextPost.description}
+                </p>
+                <div className="mt-6 flex items-center gap-2 text-sm font-medium text-accent">
+                  Read article <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            </div>
+          )}
+        </article>
+
+        {/* Right Sidebar / ToC on Desktop */}
+        <div className="hidden lg:block relative text-sm">
+          {post.headings.length > 0 && (
+            <div className="sticky top-24 pl-6 border-l border-border/50">
+              <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground block mb-6">
+                On this page
+              </span>
+              <ul className="space-y-3">
+                {post.headings.map((heading, i) => (
+                  <li key={i} style={{ paddingLeft: `${(heading.depth - 2) * 1}rem` }}>
+                    <a 
+                      href={`#${heading.id}`}
+                      className={`block transition-colors hover:text-foreground ${
+                        activeId === heading.id 
+                          ? 'text-accent font-medium' 
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      </footer>
-    </article>
+      </div>
+    </>
   );
 }
