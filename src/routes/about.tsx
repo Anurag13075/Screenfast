@@ -4,15 +4,15 @@ import { Mail, Github, Twitter } from 'lucide-react';
 export const Route = createFileRoute('/about')({
   component: About,
   head: () => ({
-    meta: [{ title: 'About — Screenfast' }],
+    meta: [{ title: 'About — Anurag' }],
   }),
 });
 
 function About() {
   return (
-    <article className="mx-auto w-full max-w-[65ch] py-8 lg:py-12 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-      <header className="mb-12 md:mb-16">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium tracking-tight leading-[1.1] mb-6 text-balance">
+    <article className="mx-auto w-full max-w-[65ch] py-12 lg:py-20 animate-hero">
+      <header className="mb-16">
+        <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight leading-[1.05] mb-6 text-foreground">
           About
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground text-balance">
@@ -20,11 +20,28 @@ function About() {
         </p>
       </header>
 
+      <div className="flex flex-col md:flex-row gap-8 mb-16">
+        <div className="shrink-0">
+          <div className="w-32 h-32 md:w-48 md:h-48 rounded-sm bg-muted border border-border overflow-hidden">
+            {/* Real avatar placeholder */}
+            <img 
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNGQkZBRjgiLz48Y2lyY2xlIGN4PSI1MCUiIGN5PSI0NSUiIHI9IjI1JSIgZmlsbD0iI0U0RTJERCIvPjxjaXJjbGUgY3g9IjUwJSIgY3k9IjExMCUiIHI9IjQ1JSIgZmlsbD0iI0U0RTJERCIvPjwvc3ZnPg==" 
+              alt="Anurag" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+        <div className="prose-custom max-w-none mt-0">
+          <p>
+            Hi, I'm Anurag. I'm a product designer and engineer. I've spent the last decade working on tools that help teams build software faster. Currently, I'm focusing on the intersection of artificial intelligence and interface design.
+          </p>
+          <p>
+            I've built and shipped several solo SaaS products—an AI UI-generation tool, a collaborative document editor, an infinite canvas application, and a Razorpay recovery tool. I know what it takes to take a product from zero to one, and from one to a hundred.
+          </p>
+        </div>
+      </div>
+
       <div className="prose-custom">
-        <p>
-          I'm a product designer and engineer. I've spent the last decade working on tools that help teams build software faster. Currently, I'm focusing on the intersection of artificial intelligence and interface design.
-        </p>
-        
         <h2>Why this site exists</h2>
         
         <p>
@@ -32,25 +49,25 @@ function About() {
         </p>
         
         <p>
-          The design system here is intentionally minimal. It relies almost entirely on the typographic scale to establish hierarchy. If you notice a detail you like, feel free to inspect the source.
+          The design system here is intentionally minimal. It relies almost entirely on the typographic scale to establish hierarchy, utilizing Fraunces for display and IBM Plex Sans for technical details. If you notice a detail you like, feel free to inspect the source.
         </p>
       </div>
 
-      <div className="mt-16 pt-8 border-t border-border/40 flex flex-col gap-4">
-        <h3 className="font-medium text-foreground">Connect</h3>
+      <div className="mt-16 pt-8 border-t border-border flex flex-col gap-4">
+        <h3 className="font-serif text-xl font-medium text-foreground">Connect</h3>
         <div className="flex items-center gap-6">
-          <a href="#" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
             <Twitter className="h-4 w-4" />
             Twitter
           </a>
-          <a href="#" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
             <Github className="h-4 w-4" />
             GitHub
           </a>
-          <a href="#" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link to="/contact" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
             <Mail className="h-4 w-4" />
             Email
-          </a>
+          </Link>
         </div>
       </div>
     </article>

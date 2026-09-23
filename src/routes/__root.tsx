@@ -78,18 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Personal Blog" },
+      { title: "Anurag — Engineering & Design" },
       {
         name: "description",
         content:
-          "Thoughts on design, engineering, and product.",
+          "Thoughts on software architecture, interface design, and building resilient systems.",
       },
-      { name: "author", content: "Author" },
-      { property: "og:title", content: "Personal Blog" },
+      { name: "author", content: "Anurag" },
+      { property: "og:title", content: "Anurag — Engineering & Design" },
       {
         property: "og:description",
         content:
-          "Thoughts on design, engineering, and product.",
+          "Thoughts on software architecture, interface design, and building resilient systems.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -104,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap",
       },
     ],
   }),
@@ -133,25 +133,26 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col max-w-4xl mx-auto px-6">
-        <header className="py-8 mb-8 border-b border-border/40 flex items-center justify-between">
-          <Link to="/" className="text-xl font-serif font-bold text-foreground">
-            Screenfast
+      <div className="min-h-screen flex flex-col max-w-5xl mx-auto px-6 md:px-12">
+        <header className="py-12 flex flex-col md:flex-row md:items-baseline justify-between gap-6">
+          <Link to="/" className="text-xl font-serif font-medium text-foreground tracking-tight hover:text-accent transition-colors">
+            Anurag
           </Link>
-          <nav className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
-            <Link to="/" className="hover:text-foreground transition-colors [&.active]:text-foreground">Writing</Link>
+          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-foreground transition-colors [&.active]:text-foreground">Index</Link>
             <Link to="/about" className="hover:text-foreground transition-colors [&.active]:text-foreground">About</Link>
+            <Link to="/contact" className="hover:text-foreground transition-colors [&.active]:text-foreground">Contact</Link>
           </nav>
         </header>
         <main className="flex-1">
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
         </main>
-        <footer className="py-12 mt-20 border-t border-border/40 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Screenfast. All rights reserved.</p>
-          <nav className="flex items-center gap-4">
+        <footer className="py-16 mt-24 border-t border-border flex flex-col md:flex-row items-baseline justify-between gap-6 text-sm text-muted-foreground">
+          <p>© {new Date().getFullYear()} Anurag. Written in India.</p>
+          <nav className="flex items-center gap-6">
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <a href="/rss.xml" className="hover:text-foreground transition-colors">RSS</a>
           </nav>
         </footer>
       </div>
