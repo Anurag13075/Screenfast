@@ -1,8 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import matter from 'gray-matter';
-
-const contentDir = path.join(process.cwd(), 'content');
 
 export type PostMeta = {
   slug: string;
@@ -19,64 +15,54 @@ export type Post = {
   content: string;
 };
 
+// Use Vite's import.meta.glob to eagerly load all markdown files in the content directory as strings
+// This ensures they are bundled correctly when deploying to Edge/Serverless environments (like Cloudflare or Vercel).
+const postsModules = import.meta.glob('../../content/*.md', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+
 export function getPosts(): PostMeta[] {
-  if (!fs.existsSync(contentDir)) {
-    return [];
-  }
-  
-  const files = fs.readdirSync(contentDir);
-  const posts = files
-    .filter(file => file.endsWith('.md') || file.endsWith('.mdx'))
-    .map(file => {
-      const filePath = path.join(contentDir, file);
-      const source = fs.readFileSync(filePath, 'utf8');
-      const { data } = matter(source);
+  const posts = Object.entries(postsModules).map(([filePath, source]) => {
+    // filePath looks like '../../content/why-react-is-slow.md'
+    const fileName = filePath.split('/').pop() || '';
+    const slug = fileName.replace(/\.mdx?$/, '');
+    
+    // source is the raw string content of the file
+    const { data } = matter(source);
 
-      return {
-        slug: file.replace(/\.mdx?$/, ''),
-        title: data.title || 'Untitled',
-        date: data.date || '',
-        description: data.description || '',
-        tags: data.tags || [],
-        readingTime: data.readingTime || '',
-        coverImage: data.coverImage,
-      };
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return {
+      slug,
+      title: data.title || 'Untitled',
+      date: data.date || '',
+      description: data.description || '',
+      tags: data.tags || [],
+      readingTime: data.readingTime || '',
+      coverImage: data.coverImage,
+    };
+  });
 
-  return posts;
+  // Sort by date descending
+  return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
 export function getPostBySlug(slug: string): Post | null {
-  try {
-    const fullPath = path.join(contentDir, `${slug}.md`);
-    const mdxPath = path.join(contentDir, `${slug}.mdx`);
-    
-    let source = '';
-    if (fs.existsSync(fullPath)) {
-      source = fs.readFileSync(fullPath, 'utf8');
-    } else if (fs.existsSync(mdxPath)) {
-      source = fs.readFileSync(mdxPath, 'utf8');
-    } else {
-      return null;
-    }
+  const targetFilePath = `../../content/${slug}.md`;
+  const source = postsModules[targetFilePath];
 
-    const { data, content } = matter(source);
-
-    return {
-      meta: {
-        slug,
-        title: data.title || 'Untitled',
-        date: data.date || '',
-        description: data.description || '',
-        tags: data.tags || [],
-        readingTime: data.readingTime || '',
-        coverImage: data.coverImage,
-      },
-      content,
-    };
-  } catch (error) {
-    console.error(`Error reading post ${slug}:`, error);
+  if (!source) {
     return null;
   }
+
+  const { data, content } = matter(source);
+
+  return {
+    meta: {
+      slug,
+      title: data.title || 'Untitled',
+      date: data.date || '',
+      description: data.description || '',
+      tags: data.tags || [],
+      readingTime: data.readingTime || '',
+      coverImage: data.coverImage,
+    },
+    content,
+  };
 }
