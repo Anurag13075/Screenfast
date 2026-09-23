@@ -4,6 +4,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowRight, Check, Copy } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { AdSlot } from '@/components/AdSlot';
+import { HighlightShare } from '@/components/HighlightShare';
 
 export const Route = createFileRoute('/blog/$slug')({
   component: BlogPost,
@@ -17,12 +19,15 @@ export const Route = createFileRoute('/blog/$slug')({
   head: ({ loaderData }) => {
     if (!loaderData?.post) return { meta: [] };
     const { post } = loaderData;
+    const ogImageUrl = `https://og.tailgraph.com/og?fontFamily=Fraunces&title=${encodeURIComponent(post.meta.title)}&bgUrl=${encodeURIComponent("https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2400&auto=format&fit=crop")}`;
+    
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
       "headline": post.meta.title,
       "datePublished": post.meta.date,
       "dateModified": post.meta.date,
+      "image": ogImageUrl,
       "author": [{
           "@type": "Person",
           "name": "Anurag Sharma",
@@ -34,6 +39,11 @@ export const Route = createFileRoute('/blog/$slug')({
       meta: [
         { title: `${post.meta.title} — Anurag Sharma` },
         { name: 'description', content: post.meta.description },
+        { property: 'og:title', content: post.meta.title },
+        { property: 'og:description', content: post.meta.description },
+        { property: 'og:image', content: ogImageUrl },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:image', content: ogImageUrl },
       ],
       scripts: [
         {
@@ -117,6 +127,7 @@ function BlogPost() {
   return (
     <>
       <ProgressBar />
+      <HighlightShare />
       
       <div className="mx-auto w-full max-w-7xl relative grid grid-cols-1 lg:grid-cols-[1fr_minmax(auto,65ch)_1fr] gap-12 py-8 lg:py-16 animate-hero">
         
@@ -200,6 +211,8 @@ function BlogPost() {
             </ReactMarkdown>
           </div>
 
+          <AdSlot format="horizontal" />
+
           <div className="mt-24 pt-12 border-t border-border">
             <div className="flex flex-col md:flex-row gap-8 items-start justify-between">
               <div className="max-w-md">
@@ -268,6 +281,9 @@ function BlogPost() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-12">
+                <AdSlot format="square" className="w-[250px] mx-0" />
+              </div>
             </div>
           )}
         </div>

@@ -131,13 +131,17 @@ function RootShell({ children }: { children: ReactNode }) {
 
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CommandMenu } from "@/components/CommandMenu";
+import { SmoothScroll } from "@/components/SmoothScroll";
+import { Noise } from "@/components/Noise";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen flex flex-col max-w-5xl mx-auto px-6 md:px-12">
+      <SmoothScroll />
+      <Noise />
+      <div className="min-h-screen flex flex-col max-w-5xl mx-auto px-6 md:px-12 relative z-10">
         <header className="py-12 flex flex-col md:flex-row md:items-baseline justify-between gap-6">
           <Link to="/" className="text-xl font-serif font-medium text-foreground tracking-tight hover:text-accent transition-colors">
             Anurag
