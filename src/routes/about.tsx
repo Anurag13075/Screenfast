@@ -23,9 +23,9 @@ function About() {
       <div className="flex flex-col md:flex-row gap-8 mb-16">
         <div className="shrink-0">
           <div className="w-32 h-32 md:w-48 md:h-48 rounded-sm bg-muted border border-border overflow-hidden">
-            {/* Real avatar placeholder */}
+            {/* Real avatar */}
             <img 
-              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNGQkZBRjgiLz48Y2lyY2xlIGN4PSI1MCUiIGN5PSI0NSUiIHI9IjI1JSIgZmlsbD0iI0U0RTJERCIvPjxjaXJjbGUgY3g9IjUwJSIgY3k9IjExMCUiIHI9IjQ1JSIgZmlsbD0iI0U0RTJERCIvPjwvc3ZnPg==" 
+              src="/avatar.jpg" 
               alt="Anurag" 
               className="w-full h-full object-cover"
             />

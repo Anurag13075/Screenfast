@@ -160,9 +160,9 @@ function BlogPost() {
               <div className="flex items-center gap-3">
                 <div className="h-6 w-6 rounded-sm bg-muted overflow-hidden border border-border">
                   <img 
-                    src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNGQkZBRjgiLz48Y2lyY2xlIGN4PSI1MCUiIGN5PSI0NSUiIHI9IjI1JSIgZmlsbD0iI0U0RTJERCIvPjxjaXJjbGUgY3g9IjUwJSIgY3k9IjExMCUiIHI9IjQ1JSIgZmlsbD0iI0U0RTJERCIvPjwvc3ZnPg==" 
+                    src="/avatar.jpg" 
                     alt="Anurag Sharma" 
-                    className="w-full h-full object-cover grayscale"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <span className="font-medium text-foreground font-sans">Anurag Sharma</span>
