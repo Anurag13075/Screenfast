@@ -148,7 +148,7 @@ function RootComponent() {
           <Outlet />
         </main>
         <footer className="py-16 mt-24 border-t border-border flex flex-col md:flex-row items-baseline justify-between gap-6 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Anurag. Written in India.</p>
+          <p>© {new Date().getFullYear()} Anurag Sharma. Written in India.</p>
           <nav className="flex items-center gap-6">
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>

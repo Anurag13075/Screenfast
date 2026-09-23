@@ -32,8 +32,8 @@ function Contact() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground m-0">Direct Email</p>
-              <a href="mailto:hello@anurag.com" className="text-lg font-serif font-medium text-foreground hover:text-accent !no-underline transition-colors block mt-1">
-                hello@anurag.com
+              <a href="mailto:anuragf863@gmail.com" className="text-lg font-serif font-medium text-foreground hover:text-accent !no-underline transition-colors block mt-1">
+                anuragf863@gmail.com
               </a>
             </div>
           </div>

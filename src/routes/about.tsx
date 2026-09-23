@@ -33,7 +33,7 @@ function About() {
         </div>
         <div className="prose-custom max-w-none mt-0">
           <p>
-            Hi, I'm Anurag. I'm a product designer and engineer. I've spent the last decade working on tools that help teams build software faster. Currently, I'm focusing on the intersection of artificial intelligence and interface design.
+            Hi, I'm Anurag Sharma. I'm a product designer and engineer. I've spent the last decade working on tools that help teams build software faster. Currently, I'm focusing on the intersection of artificial intelligence and interface design.
           </p>
           <p>
             I've built and shipped several solo SaaS products—an AI UI-generation tool, a collaborative document editor, an infinite canvas application, and a Razorpay recovery tool. I know what it takes to take a product from zero to one, and from one to a hundred.
