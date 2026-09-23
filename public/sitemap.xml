@@ -16,6 +16,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://screenfast.site/tags/undefined</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://screenfast.site/blog/why-dark-mode-is-hard</loc>
     <lastmod>2026-07-18</lastmod>
     <changefreq>monthly</changefreq>

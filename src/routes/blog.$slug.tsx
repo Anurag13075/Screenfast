@@ -14,14 +14,35 @@ export const Route = createFileRoute('/blog/$slug')({
     }
     return { post };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData?.post
-      ? [
-          { title: `${loaderData.post.meta.title} — Anurag Sharma` },
-          { name: 'description', content: loaderData.post.meta.description },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    if (!loaderData?.post) return { meta: [] };
+    const { post } = loaderData;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": post.meta.title,
+      "datePublished": post.meta.date,
+      "dateModified": post.meta.date,
+      "author": [{
+          "@type": "Person",
+          "name": "Anurag Sharma",
+          "url": "https://screenfast.site/about"
+        }],
+      "description": post.meta.description
+    };
+    return {
+      meta: [
+        { title: `${post.meta.title} — Anurag Sharma` },
+        { name: 'description', content: post.meta.description },
+      ],
+      scripts: [
+        {
+          type: 'application/ld+json',
+          children: JSON.stringify(jsonLd)
+        }
+      ]
+    };
+  },
 });
 
 function ProgressBar() {

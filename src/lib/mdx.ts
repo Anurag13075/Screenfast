@@ -76,6 +76,10 @@ export const getPostBySlug = createServerFn({ method: "GET" })
     const currentIndex = allPosts.findIndex(p => p.slug === slug);
     const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : (allPosts.length > currentIndex + 1 ? allPosts[currentIndex + 1] : null);
 
+    // Calculate true reading time dynamically (200 words per minute)
+    const wordCount = content.split(/\s+/).length;
+    const dynamicReadingTime = `${Math.ceil(wordCount / 200)} min read`;
+
     return {
       meta: {
         slug,
@@ -83,7 +87,7 @@ export const getPostBySlug = createServerFn({ method: "GET" })
         date: data.date || '',
         description: data.description || '',
         tags: data.tags || [],
-        readingTime: data.readingTime || '',
+        readingTime: dynamicReadingTime,
         coverImage: data.coverImage,
       },
       content,

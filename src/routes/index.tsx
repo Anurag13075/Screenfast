@@ -109,7 +109,9 @@ function Index() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24">
             <div className="md:col-span-4 lg:col-span-3">
               <div className="sticky top-24">
-                <h2 className="text-3xl font-serif font-medium text-foreground mb-4">Engineering</h2>
+                <Link to="/tags/engineering" className="hover:text-accent transition-colors">
+                  <h2 className="text-3xl font-serif font-medium text-foreground mb-4">Engineering</h2>
+                </Link>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Deep dives into systems architecture, frontend performance, local-first syncing, and building resilient SaaS infrastructure.
                 </p>
@@ -144,7 +146,9 @@ function Index() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 lg:gap-24">
             <div className="md:col-span-4 lg:col-span-3">
               <div className="sticky top-24">
-                <h2 className="text-3xl font-serif font-medium text-foreground mb-4">Experience</h2>
+                <Link to="/tags/design" className="hover:text-accent transition-colors">
+                  <h2 className="text-3xl font-serif font-medium text-foreground mb-4">Experience</h2>
+                </Link>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   Thoughts on user experience, micro-interactions, typography, and building software that feels expensive.
                 </p>

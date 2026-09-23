@@ -129,6 +129,9 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { CommandMenu } from "@/components/CommandMenu";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -139,11 +142,17 @@ function RootComponent() {
           <Link to="/" className="text-xl font-serif font-medium text-foreground tracking-tight hover:text-accent transition-colors">
             Anurag
           </Link>
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-foreground transition-colors [&.active]:text-foreground">Index</Link>
-            <Link to="/about" className="hover:text-foreground transition-colors [&.active]:text-foreground">About</Link>
-            <Link to="/contact" className="hover:text-foreground transition-colors [&.active]:text-foreground">Contact</Link>
-          </nav>
+          <div className="flex items-center gap-6">
+            <nav className="flex items-center gap-6 text-sm text-muted-foreground">
+              <Link to="/" className="hover:text-foreground transition-colors [&.active]:text-foreground">Index</Link>
+              <Link to="/about" className="hover:text-foreground transition-colors [&.active]:text-foreground">About</Link>
+              <Link to="/contact" className="hover:text-foreground transition-colors [&.active]:text-foreground">Contact</Link>
+            </nav>
+            <div className="flex items-center gap-4 border-l border-border pl-6">
+              <CommandMenu />
+              <ThemeToggle />
+            </div>
+          </div>
         </header>
         <main className="flex-1">
           <Outlet />

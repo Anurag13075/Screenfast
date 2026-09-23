@@ -23,6 +23,8 @@ function generateSitemap() {
     };
   });
 
+  const tags = Array.from(new Set(posts.flatMap(p => p.tags)));
+
   // Sort by date desc
   posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -43,6 +45,11 @@ function generateSitemap() {
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+${tags.map(tag => `  <url>
+    <loc>${SITE_URL}/tags/${tag}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('\n')}
 ${posts.map(post => `  <url>
     <loc>${SITE_URL}/blog/${post.slug}</loc>
     <lastmod>${post.date}</lastmod>
