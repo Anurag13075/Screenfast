@@ -33,10 +33,10 @@ function About() {
         </div>
         <div className="prose-custom max-w-none mt-0">
           <p>
-            Hi, I'm Anurag Sharma. I'm a product designer and engineer. I've spent the last decade working on tools that help teams build software faster. Currently, I'm focusing on the intersection of artificial intelligence and interface design.
+            Hi, I'm Anurag Sharma — a third-year CS student and solo product designer/engineer. Over the past few years I've been building and shipping AI-powered tools, mostly by myself, mostly in public. Currently, I'm focusing on the intersection of artificial intelligence and interface design.
           </p>
           <p>
-            I've built and shipped several solo SaaS products—an AI UI-generation tool, a collaborative document editor, an infinite canvas application, and a Razorpay recovery tool. I know what it takes to take a product from zero to one, and from one to a hundred.
+            I've built and shipped several solo SaaS products—<a href="https://breeze-ochre.vercel.app" target="_blank" rel="noopener noreferrer">Breeze</a>, an AI-powered document editor; <a href="https://pencil-sketchpad.vercel.app" target="_blank" rel="noopener noreferrer">Pencil</a>, an infinite canvas for technical diagrams; and <a href="https://unfold-zeta-one.vercel.app" target="_blank" rel="noopener noreferrer">Undrop</a>, an AI recovery tool for Razorpay merchants. I know what it takes to take a product from zero to one, and from one to a hundred.
           </p>
         </div>
       </div>
@@ -45,7 +45,7 @@ function About() {
         <h2>Why this site exists</h2>
         
         <p>
-          Most technical blogs are either too dry or too focused on SEO hacking. I wanted a place to share genuine thoughts on design, engineering, and the subtle details that make software great. No growth hacks, no popups, just good typography and careful thought.
+          Most technical blogs are either too dry or too focused on SEO hacking. I wanted a place to share genuine thoughts on design, engineering, and the subtle details that make software great. Just good typography, clear performance, and careful thought.
         </p>
         
         <p>
@@ -56,11 +56,11 @@ function About() {
       <div className="mt-16 pt-8 border-t border-border flex flex-col gap-4">
         <h3 className="font-serif text-xl font-medium text-foreground">Connect</h3>
         <div className="flex items-center gap-6">
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
+          <a href="https://twitter.com/AnuragShar74342" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
             <Twitter className="h-4 w-4" />
             Twitter
           </a>
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
+          <a href="https://github.com/Anurag13075" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent transition-colors">
             <Github className="h-4 w-4" />
             GitHub
           </a>
