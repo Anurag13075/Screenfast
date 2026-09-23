@@ -133,6 +133,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { CommandMenu } from "@/components/CommandMenu";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Noise } from "@/components/Noise";
+import { Analytics } from "@vercel/analytics/react";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -172,6 +173,7 @@ function RootComponent() {
       </div>
       <CookieConsent />
       <Toaster position="top-center" />
+      <Analytics />
     </QueryClientProvider>
   );
 }

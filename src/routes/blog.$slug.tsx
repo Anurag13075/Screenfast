@@ -136,7 +136,7 @@ function BlogPost() {
             to="/" 
             className="text-muted-foreground hover:text-foreground transition-colors font-medium sticky top-24"
           >
-            Index
+            ← All Posts
           </Link>
         </div>
 
@@ -147,7 +147,7 @@ function BlogPost() {
             to="/" 
             className="lg:hidden inline-block text-sm text-muted-foreground hover:text-foreground transition-colors mb-12 font-medium"
           >
-            Index
+            ← All Posts
           </Link>
 
           <header className="mb-16">
