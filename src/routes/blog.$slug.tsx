@@ -7,7 +7,7 @@ import { ArrowLeft, Clock, Calendar, Hash } from 'lucide-react';
 export const Route = createFileRoute('/blog/$slug')({
   component: BlogPost,
   loader: async ({ params }) => {
-    const post = getPostBySlug(params.slug);
+    const post = await getPostBySlug({ data: params.slug });
     if (!post) {
       throw notFound();
     }

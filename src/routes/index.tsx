@@ -4,7 +4,7 @@ import { getPosts, type PostMeta } from '../lib/mdx';
 export const Route = createFileRoute('/')({
   component: Index,
   loader: async () => {
-    const posts = getPosts();
+    const posts = await getPosts();
     return { posts };
   },
 });
